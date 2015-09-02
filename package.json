@@ -1,0 +1,27 @@
+{
+  "name" : "sample_app",
+  "version": "0.0.1",
+  "license" : "SEE LICENSE IN LICENSE",
+  "repository": "Caleydo/sample_app",
+  "dependencies": {
+  },
+  "peerDependencies": {
+    "caleydo_core": "*"
+  },
+  "caleydo": {
+    "plugins": {
+      "web": {
+        "type": "app",
+        "name": "Sample"
+      }
+    },
+    "dependencies":{
+      "web":{
+        "d3": "~3.5.5"
+      }
+    }
+  },
+  "publishConfig": {
+    "registry": "http://registry.caleydo.org/"
+  }
+}

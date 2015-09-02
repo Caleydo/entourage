@@ -1,0 +1,10 @@
+{
+  "name": "Entourage",
+  "description": "Pathway exploration tool. type is the type of package to create: python|js|static. app is the name of the app to start by default or _selected for a selector, package: tar.gz|zip",
+  "type": "python",
+  "package": "tar.gz",
+  "app": "entourage",
+  "plugins": [
+    "entourage"
+  ]
+}
