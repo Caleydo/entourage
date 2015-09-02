@@ -1,8 +1,8 @@
 {
-  "name" : "sample_app",
+  "name" : "entourage",
   "version": "0.0.1",
   "license" : "SEE LICENSE IN LICENSE",
-  "repository": "Caleydo/sample_app",
+  "repository": "Caleydo/entourage",
   "dependencies": {
   },
   "peerDependencies": {
@@ -12,12 +12,13 @@
     "plugins": {
       "web": {
         "type": "app",
-        "name": "Sample"
+        "name": "Entourage"
       }
     },
     "dependencies":{
       "web":{
-        "d3": "~3.5.5"
+        "d3": "~3.5.5",
+        "jquery": "~1.10.2"
       }
     }
   },
