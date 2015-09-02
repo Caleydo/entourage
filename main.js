@@ -1,7 +1,7 @@
 /**
  * Created by Christian on 11.12.2014.
  */
-require(['jquery', 'd3'], function ($, d3) {
+define(['jquery', 'd3'], function ($, d3) {
   'use strict';
 
   //$.ajax({
