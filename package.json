@@ -1,24 +1,35 @@
 {
-  "name" : "entourage",
+  "name": "entourage",
   "version": "0.0.1",
-  "license" : "SEE LICENSE IN LICENSE",
+  "license": "SEE LICENSE IN LICENSE",
   "repository": "Caleydo/entourage",
   "dependencies": {
   },
   "peerDependencies": {
-    "caleydo_core": "*"
+    "caleydo_core": "*",
+    "caleydo_server": "*"
   },
   "caleydo": {
     "plugins": {
       "web": {
         "type": "app",
         "name": "Entourage"
-      }
+      },
+      "python": [
+        {
+          "type": "namespace",
+          "file": "kegg_pathways",
+          "namespace": "/api/kegg_pathways"
+        }
+      ]
     },
-    "dependencies":{
-      "web":{
+    "dependencies": {
+      "web": {
         "d3": "~3.5.5",
         "jquery": ">=1.11.0"
+      },
+      "python": {
+        "biopython": ">=1.65"
       }
     }
   },
