@@ -54,7 +54,7 @@ define(['jquery', 'd3'], function ($, d3) {
     // $('<h1>'+resp+'</h1>').appendTo('body');
     //});
 
-    $.get("http://rest.kegg.jp/list/pathway/hsa/", function (response) {
+    $.get("/api/kegg_pathways/list", function (response) {
       if (typeof(response) === "string") {
         var entries = response.split("\n");
 
@@ -84,7 +84,7 @@ define(['jquery', 'd3'], function ($, d3) {
         $(selectPathway).on("change", function () {
 
           var imgUrl = "http://rest.kegg.jp/get/" + this.value + "/image";
-          var xmlUrl = "http://rest.kegg.jp/get/" + this.value + "/kgml";
+          var xmlUrl = "/api/kegg_pathways/kgml/" + this.value;
 
           var img = $("<img/>").attr("src", imgUrl).load(function () {
             var width = this.width;
