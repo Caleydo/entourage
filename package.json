@@ -23,6 +23,11 @@
         }
       ]
     },
+    "products": {
+      "type": "python",
+      "name": "Entourage",
+      "description": "Pathway exploration tool"
+    },
     "dependencies": {
       "web": {
         "d3": "~3.5.5",
