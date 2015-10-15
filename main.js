@@ -54,7 +54,8 @@ define(['jquery', 'd3'], function ($, d3) {
     // $('<h1>'+resp+'</h1>').appendTo('body');
     //});
 
-    $.get("/api/kegg_pathways/list", function (response) {
+
+   $.get("/api/kegg_pathways/list", function (response) {
       if (typeof(response) === "string") {
         var entries = response.split("\n");
 
@@ -85,6 +86,7 @@ define(['jquery', 'd3'], function ($, d3) {
 
           var imgUrl = "http://rest.kegg.jp/get/" + this.value + "/image";
           var xmlUrl = "/api/kegg_pathways/kgml/" + this.value;
+          // var xmlUrl = "http://rest.kegg.jp/get//" + this.value+ "/kgml";
 
           var img = $("<img/>").attr("src", imgUrl).load(function () {
             var width = this.width;
@@ -123,32 +125,60 @@ define(['jquery', 'd3'], function ($, d3) {
         //d3.select("body").append("p").text(pwMapIDs[0][1]);
         //d3.select("body").append("img").attr("src", "http://rest.kegg.jp/get/" + pwMapIDs[0][0] + "/image");
       }
-    });
+    }) .done(function() {
+      //alert( "second success" );
+    })
+      .fail(function(xhr, err) {
+       // alert("erroR");
+
+      });
+
 
   });
 
   function render(parent, data) {
 
     var nodes = [];
+    var allNodes = [];
     var edges = [];
     var nodeMap = {};
     var reactionMap = {};
+    var selectedNodes = [];
+    var sourceNode = {};
+    var targetNode = {};
 
     $(data).find('entry').each(function () {
       var entry = $(this);
       var id = entry.attr("id");
       var type = entry.attr("type");
 
+      var allnode = {}
+
+      allnode.id = id;
+      allnode.type = type;
+
+      var graphicsNode = entry.find('graphics');
+      allnode.x = $(graphicsNode).attr('x');
+      allnode.y = $(graphicsNode).attr('y');
+      allnode.name = $(graphicsNode).attr('name');
+      allnode.width = $(graphicsNode).attr('width');
+      allnode.height = $(graphicsNode).attr('height');
+
+      //nodeMap[id] = allnode;
+      allNodes.push(allnode);
+
       //only consider genes and compounds for now
       if (type === "gene" || type === "compound") {
 
         var node = {};
+
         node.id = id;
         node.type = type;
 
         var graphics = entry.find('graphics');
         node.x = $(graphics).attr('x');
         node.y = $(graphics).attr('y');
+        node.name = $(graphics).attr('name');
         node.width = $(graphics).attr('width');
         node.height = $(graphics).attr('height');
 
@@ -270,11 +300,136 @@ define(['jquery', 'd3'], function ($, d3) {
       }
     );
 
+   console.log(edges);
+   /* console.log("This is test");
+
+    $.each(allNodes, function(index, val) {
+      console.log(val);
+    }); */
+
+    // Define the div for the tooltip
+    var div = d3.select("body").append("div")
+      .attr("class", "tooltip")
+      .style("opacity", 0);
+
+   var check = parent.selectAll('rect').data(allNodes);
+
+    check.enter()
+        .append("rect");
+
+    check.attr("x", function (node) {
+      return node.x - node.width / 2;
+    })
+      .attr("y", function (node) {
+
+        return node.y - node.height / 2;
+      })
+      .attr("width", function (node) {
+
+        return node.width;
+      })
+      .attr("height", function (node) {
+        return node.height;
+      })
+      //.attr("stroke","red")
+      .attr("fill","transparent")
+      .on("mouseover",function(node){
+        var color =  d3.select(this).attr( "style" );
+        if(color == "outline: thick solid green;") {
+
+        }else{
+          d3.select(this)
+            .attr("style", "outline: thick solid orange;")
+        }
+        div.transition()
+          .duration(200)
+          .style("opacity", .9);
+
+        div.html(node.name)
+          .style("left", (d3.event.pageX) + "px")
+          .style("top", (d3.event.pageY - 28) + "px");
+
+    })
+      .on("mouseout",function(){
+        var color =  d3.select(this).attr( "style" );
+        if(color == "outline: thick solid orange;") {
+          d3.select(this)
+            .attr("style", "outline: none;");
+
+          div.transition()
+            .duration(500)
+            .style("opacity", 0);
+        }else{
+          //alert(color);
+        }
+      })
+
+      .on("click",function(node){
+       /* var color =  d3.select(this).attr( "style" );
+        if(color == "outline: thick solid green;") {
+          d3.select(this)
+            .attr("style", "outline: none;");
+        }else{
+          d3.select(this)
+            .attr("style", "outline: thick solid green;");
+        } */
+
+        //console.log(node);
+        if(jQuery.isEmptyObject(sourceNode)){
+          console.log("Source node");
+          sourceNode = node;
+          d3.select(this)
+            .attr("style", "outline: thick solid green;");
+          selectedNodes.push(node);
+        }else{
+          console.log("Are you here?");
+          targetNode = node;
+          var a = _.filter( edges, function(item){
+            if (item.source.id == sourceNode.id  && item.target.id == targetNode.id){
+              return item;
+            }
+          });
+
+          console.log(a);
+          if(typeof a != "undefined" && a != null && a.length > 0){
+            d3.select(this)
+              .attr("style", "outline: thick solid green;");
+            selectedNodes.push(node);
+            sourceNode = targetNode;
+          }else{
+
+           console.log(selectedNodes);
+            var unselect = parent.selectAll("rect")
+
+            unselect
+              .attr("style","outline: none");
+
+          //  unselect.exit().remove();
+            sourceNode = null;
+            targetNode = null;
+           alert("dont work!remove from selected!");
+          }
+
+
+        }
+
+
+
+
+      })
+
+
+    check.exit().remove();
+
+
 
     var tt = parent.selectAll("rect").data(nodes);
 
     tt.enter()
-      .append("rect");
+      .append("rect")
+      .append("svg:title")
+     // .text(function(node) { return node.name;})
+
 
     tt.attr("x", function (node) {
       return node.x - node.width / 2;
@@ -290,9 +445,42 @@ define(['jquery', 'd3'], function ($, d3) {
       .attr("height", function (node) {
         return node.height;
       })
-      .attr("fill", "rgb(255,0,0)");
-    tt.exit().remove();
+      .attr("fill", "rgb(255,0,0)")
+      //.attr("stroke","red")
+      //.attr("fill","none")
+      .on("mouseover",function(node){
+        var color =  d3.select(this).attr( "style" );
+        if(color == "outline: thick solid green;") {
 
+        }else{
+          d3.select(this)
+            .attr("style", "outline: thick solid orange;")
+        }
+        div.transition()
+          .duration(200)
+          .style("opacity", .9);
+
+        div.html(node.name)
+          .style("left", (d3.event.pageX) + "px")
+          .style("top", (d3.event.pageY - 28) + "px");
+
+      })
+      .on("mouseout",function(){
+        var color =  d3.select(this).attr( "style" );
+        if(color == "outline: thick solid orange;") {
+          d3.select(this)
+            .attr("style", "outline: none;");
+
+          div.transition()
+            .duration(500)
+            .style("opacity", 0);
+        }else{
+
+        }
+      })
+
+
+    // tt.exit().remove();
 
     var tt = parent.selectAll("line").data(edges);
 
@@ -319,6 +507,7 @@ define(['jquery', 'd3'], function ($, d3) {
       //  return edge.edgeClass === "relation" ? "0,0" : "1,20";
       //});
     tt.exit().remove();
+
 
 
     //var entries = $(data).find('entry');
