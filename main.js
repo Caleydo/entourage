@@ -418,7 +418,22 @@ define(['jquery', 'd3'], function ($, d3) {
 
       })
 
+// Deselecting all selected nodes by double-clicking on any one of the selected nodes.
+      .on("dblclick", function(){
+      var color =  d3.select(this).attr( "style" );
+              if(color == "outline: thick solid green;") {
+                d3.selectAll("rect")
+                  .attr("style", "outline: none;");
+                //d3.event.stopPropagation();
+              }})
 
+
+// Removed all the red rect and blue lines --------------------
+    rect.on("click", function() {
+          console.log("rect");
+          d3.event.stopPropagation();
+        });
+//---------------------------------------------------------
     check.exit().remove();
 
 
