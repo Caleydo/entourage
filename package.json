@@ -30,6 +30,7 @@
     },
     "dependencies": {
       "web": {
+        "underscore": "~1.8",
         "d3": "~3.5.5",
         "jquery": ">=1.11.0"
       },
