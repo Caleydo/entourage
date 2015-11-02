@@ -3,7 +3,6 @@
  */
 define(['jquery', 'd3', 'underscore'], function ($, d3, _) {
   'use strict';
-
   //$.ajax({
   //
   //  // The 'type' property sets the HTTP method.
@@ -49,13 +48,31 @@ define(['jquery', 'd3', 'underscore'], function ($, d3, _) {
   //  }
   //});
 
+
+
   $(document).ready(function () {
     //$.get("/api/pathway", function (resp) {
     // $('<h1>'+resp+'</h1>').appendTo('body');
     //});
 
 
+
    $.get("/api/kegg_pathways/list", function (response) {
+
+/*
+    var menuLinkText = [{
+       text: "Debug Mode",
+       id: "debug_mode"
+     }, {
+      text: "Select Pathways",
+      id: "select_pathways"
+     }, {
+      text: "EnRoute",
+      id: "enroute"
+     }];
+*/
+
+
       if (typeof(response) === "string") {
         var entries = response.split("\n");
 
@@ -63,24 +80,67 @@ define(['jquery', 'd3', 'underscore'], function ($, d3, _) {
           return [entry.substring(5, 13), entry.substring(14)];
         });
 
-        var selectPathway = $('<select>').appendTo('body')[0];
+        var selectPathway = $('<select>').appendTo('#selection')[0];
         pwMapIDs.forEach(function (d) {
           $(selectPathway).append($("<option value='" + d[0] + "'>" + d[1] + "</option>"));
         });
 
-        $('</br>').appendTo('body');
+        $('</br>').appendTo('#selection');
 
-        var svg = d3.select("body").append("svg");
+        var svg = d3.select("#left").append("svg").attr('id','leftContainer');
         var image = svg.append("defs")
           .append('pattern')
           .append("image");
 
 
         svg.append("rect");
+
         var nodeGroup = svg.append("g");
+
+
+        var RightSvg = d3.select("#right").append("svg").attr('id','rightContainer');
+
+
+
+        RightSvg.append("rect");
+
+
+
+
+
         //image.on("load", function() {
         //  console.log("width: " + this.width + ", height: "+this.height);
         //});
+
+     /*   var menuLinks = d3.select("#menuLinks");
+
+        var textNodes = menuLinks.selectAll("text").data(menuLinkText);
+
+        textNodes.enter().append("text")
+          .attr("class", "label")
+          .attr("href",'#')
+          .attr("id",function(d){
+            return d.id
+          })
+          .text(function (d) {
+            return d.text
+          });*/
+          /*
+         .style('float','left')
+          .style('width','6em')
+      .style('text-decoration','none')
+      .style('color','black')
+      .style('background-color','#030101')
+      .style('padding','0.2em 0.6em')
+      .style('border-right','1px solid white');*/
+
+
+        //var menuLinks = d3.select('#menuLinks').selectAll("ul").data({id:pathways,name:pathways});
+        //menuLinks.enter().append('ul');
+
+
+       // menuLinks.on('click', makeSelection);
+
 
         $(selectPathway).on("change", function () {
 
@@ -94,6 +154,9 @@ define(['jquery', 'd3', 'underscore'], function ($, d3, _) {
 
             svg.attr("width", width)
               .attr("height", height);
+
+
+
 
             svg.select("defs")
               .select('pattern')
@@ -111,10 +174,15 @@ define(['jquery', 'd3', 'underscore'], function ($, d3, _) {
               .attr('height', height);
 
 
+            RightSvg.select("rect")
+              .attr('x',width+10)
+              .attr("height",height)
+
             $.get(xmlUrl, function (response) {
               render(nodeGroup, response);
             });
 
+            console.log(selectedMenuLink);
           });
           //img.appendTo("body");
 
@@ -134,6 +202,27 @@ define(['jquery', 'd3', 'underscore'], function ($, d3, _) {
       });
 
 
+  });
+
+  $( "#menu a" ).bind( "click", function() {
+    //alert($(this.attr("id")));
+    var id = $(this).attr("id");
+
+    if($(this).attr("selected")) {
+      $(this).attr("selected", false);
+      $(this).attr("style","background-color: #030101;");
+      if(id === "pathway"){
+
+        var unselect = d3.select("body").selectAll("rect")
+
+        unselect.attr("style","outline: none");
+
+      }
+    } else {
+      $(this).attr("selected", "selected");
+      $(this).attr("style","background-color: #3091ff;");
+
+    }
   });
 
   function render(parent, data) {
@@ -300,7 +389,7 @@ define(['jquery', 'd3', 'underscore'], function ($, d3, _) {
       }
     );
 
-   console.log(edges);
+   //console.log(edges);
    /* console.log("This is test");
 
     $.each(allNodes, function(index, val) {
@@ -365,53 +454,73 @@ define(['jquery', 'd3', 'underscore'], function ($, d3, _) {
       })
 
       .on("click",function(node){
-       /* var color =  d3.select(this).attr( "style" );
-        if(color == "outline: thick solid green;") {
-          d3.select(this)
-            .attr("style", "outline: none;");
-        }else{
-          d3.select(this)
-            .attr("style", "outline: thick solid green;");
-        } */
 
-        //console.log(node);
-        if(jQuery.isEmptyObject(sourceNode)){
-          console.log("Source node");
-          sourceNode = node;
-          d3.select(this)
-            .attr("style", "outline: thick solid green;");
-          selectedNodes.push(node);
-        }else{
-          console.log("Are you here?");
-          targetNode = node;
-          var a = _.filter( edges, function(item){
-            if (item.source.id == sourceNode.id  && item.target.id == targetNode.id){
-              return item;
-            }
-          });
+        console.log(node);
 
-          console.log(a);
-          if(typeof a != "undefined" && a != null && a.length > 0){
+        if($( "#menu a#pathway" ).attr('selected')){
+
+          if(jQuery.isEmptyObject(sourceNode)){
+            //console.log("Source node");
+            sourceNode = node;
             d3.select(this)
               .attr("style", "outline: thick solid green;");
             selectedNodes.push(node);
-            sourceNode = targetNode;
+
           }else{
+            //console.log("Are you here?");
+            targetNode = node;
+            var a = _.filter( edges, function(item){
+              if (item.source.id == sourceNode.id  && item.target.id == targetNode.id){
+                return item;
+              }
+            })
 
-           console.log(selectedNodes);
-            var unselect = parent.selectAll("rect")
+            var test = _.filter( edges, function(item){
+              if (item.source.id == sourceNode.id  || item.target.id == targetNode.id){
+                return item;
+              }
+            })
 
-            unselect
-              .attr("style","outline: none");
+            console.log(test);
 
-          //  unselect.exit().remove();
-            sourceNode = null;
-            targetNode = null;
-           alert("dont work!remove from selected!");
+            var test = _.filter( edges, function(item){
+              if (item.source.id == sourceNode.id){
+                return item
+              }
+            })
+            if(typeof a != "undefined" && a != null && a.length > 0){
+              d3.select(this)
+                .attr("style", "outline: thick solid green;");
+              selectedNodes.push(node);
+              sourceNode = targetNode;
+            }else{
+
+              //console.log(selectedNodes);
+              var unselect = parent.selectAll("rect")
+
+              unselect
+                .attr("style","outline: none");
+
+              //  unselect.exit().remove();
+              sourceNode = null;
+              targetNode = null;
+              //alert("dont work!remove from selected!");
+            }
+
+
           }
+        }else{
+
+          var unselect = parent.selectAll("rect")
+
+          unselect
+            .attr("style","outline: none");
 
 
+          sourceNode = null;
+          targetNode = null;
         }
+
 
 
 
