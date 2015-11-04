@@ -225,7 +225,9 @@ define(['jquery', 'd3', 'underscore'], function ($, d3, _) {
     }
   });
 
-  function render(parent, data) {
+
+
+    function render(parent, data) {
 
     var nodes = [];
     var allNodes = [];
@@ -388,6 +390,10 @@ define(['jquery', 'd3', 'underscore'], function ($, d3, _) {
 
       }
     );
+      // Create Adjacency Matrix
+      var matrix = createAdjacencyMatrix(nodes,edges);
+      //console.log(matrix);
+
 
    //console.log(edges);
    /* console.log("This is test");
@@ -422,6 +428,9 @@ define(['jquery', 'd3', 'underscore'], function ($, d3, _) {
       })
       //.attr("stroke","red")
       .attr("fill","transparent")
+      .attr("id",function(node){
+        return node.id;
+      })
       .on("mouseover",function(node){
         var color =  d3.select(this).attr( "style" );
         if(color == "outline: thick solid green;") {
@@ -455,7 +464,7 @@ define(['jquery', 'd3', 'underscore'], function ($, d3, _) {
 
       .on("click",function(node){
 
-        console.log(node);
+       // console.log(node);
 
         if($( "#menu a#pathway" ).attr('selected')){
 
@@ -467,27 +476,37 @@ define(['jquery', 'd3', 'underscore'], function ($, d3, _) {
             selectedNodes.push(node);
 
           }else{
-            //console.log("Are you here?");
+
             targetNode = node;
-            var a = _.filter( edges, function(item){
+            //alert(this);
+            var i;
+            //CODE FOR SHORTEST PATH ALGORITHM //
+            var path = shortestPathAlgo(matrix,nodes,sourceNode,targetNode);
+            //console.log(nodes);
+            console.log(path.length,'---',path);
+            for (i = 0; i < path.length; i += 1) {
+
+              var a = _.filter( nodes, function(item) {
+                if (item.id == path[i]) {
+                  return item;
+                }
+              })
+              console.log("Object",i,"--",a);
+              var id = a[0].id;
+              alert(id);
+              // FOR SELECTING AND DISPLAYING EXSISTING PATHS
+
+
+            }
+
+
+          // CODE FOR ORIGINAL NODE SELECTION ONE BY ONE //
+          /* var a = _.filter( edges, function(item){
               if (item.source.id == sourceNode.id  && item.target.id == targetNode.id){
                 return item;
               }
             })
 
-            var test = _.filter( edges, function(item){
-              if (item.source.id == sourceNode.id  || item.target.id == targetNode.id){
-                return item;
-              }
-            })
-
-            console.log(test);
-
-            var test = _.filter( edges, function(item){
-              if (item.source.id == sourceNode.id){
-                return item
-              }
-            })
             if(typeof a != "undefined" && a != null && a.length > 0){
               d3.select(this)
                 .attr("style", "outline: thick solid green;");
@@ -495,7 +514,6 @@ define(['jquery', 'd3', 'underscore'], function ($, d3, _) {
               sourceNode = targetNode;
             }else{
 
-              //console.log(selectedNodes);
               var unselect = parent.selectAll("rect")
 
               unselect
@@ -505,7 +523,7 @@ define(['jquery', 'd3', 'underscore'], function ($, d3, _) {
               sourceNode = null;
               targetNode = null;
               //alert("dont work!remove from selected!");
-            }
+            }*/
 
 
           }
@@ -672,6 +690,166 @@ define(['jquery', 'd3', 'underscore'], function ($, d3, _) {
   }
 
 
+
+
+  function createAdjacencyMatrix(nodes,edges) {
+
+    var edgeHash = {};
+    var MaxValue = 1000;
+    for (var x in edges) {
+      var id = edges[x].source.id + "-" + edges[x].target.id;
+      edgeHash[id] = edges[x];
+    }
+
+    var matrix = [];
+    //create all possible edges
+    for (var a in nodes) {
+      for (var b in nodes) {
+        var grid = {id: nodes[a].id + "-" + nodes[b].id, source: nodes[a].id, target: nodes[b].id, weight: MaxValue};
+        if (edgeHash[grid.id]) {
+          grid.weight = 1;
+        }
+        matrix.push(grid);
+      }
+    }
+
+
+    return matrix;
+  }
+
+
+  function shortestPathAlgo(matrix,nodes,sourceNode,targetNode){
+
+
+    var distance = [];
+    var previous = [];
+    var Q=[] //LIST OF ALL VERTICES//
+    var  i;
+
+    //console.log(Q);
+    console.log("SourceNode--->",sourceNode);
+    console.log("TargetNode--->",targetNode);
+
+
+    // INITIALIZATION STEP : ALL NODES AS INFINITY //
+    for (i = 0; i < nodes.length; i += 1) {
+
+      var dist = {}
+      var prev = {}
+      dist.id = nodes[i].id;
+      dist.value = Infinity;
+      //prev.id = nodes[i].id;
+      //prev.value = null;
+      distance.push(dist);
+      previous[nodes[i].id] = undefined;
+      //previous.push(prev);
+      Q.push(nodes[i].id);
+
+    }
+
+     // INITIALIZATION STEP : SOURCE NODE AS 0 //
+     _.filter( distance, function(item){
+      if (item.id == sourceNode.id){
+        item.value = 0;
+      }
+    })
+
+//    console.log(previous);
+
+    var S = []; // LIST OF VISITED VERTICES //
+
+    //console.log("iterations",Q.length);
+    while(!jQuery.isEmptyObject(Q)){
+
+
+      var min = Infinity;
+
+      var pos = 0;
+      //console.log("distance Iterations",distance);
+    //  console.log("previous Iterations",previous);
+     // console.log("Q-->",Q,'length-->',Q.length);
+      for (i = 0; i < Q.length; i += 1) {
+
+        var minDist = distance.filter(function(a){ return a.id == Q[i] })[0];
+        var weightValue = minDist.value;
+
+        if(weightValue < min){
+          min = weightValue;
+          pos = Q[i];
+        }
+      }
+
+    //  console.log(min,'--',pos);
+      S.push(pos);
+      Q.pop(pos);
+
+
+     // NEIGHBOUR FINDING STEP //
+
+     var v = _.filter( matrix, function(item){
+      if (item.source == pos){
+        return item.target;
+        }
+      })
+
+      // TERMINATE IF TARGET NODE REACHED //
+      var currentDist = distance.filter(function(a){ return a.id == pos })[0];
+      if (currentDist.value == Infinity || pos == targetNode.id) {
+          //console.log("stop!!");
+          //previous[pos] = targetNode.id;
+          break;
+      }
+
+    //console.log(v);
+
+     for (i = 0; i < v.length; i += 1) {
+
+      var neighbourId =  v[i].target;
+      //console.log("NEXT NEIGHBOUR ID",neighbourId);
+      var matrixId = pos+'-'+neighbourId;
+      //console.log(matrixId);
+      var current = _.filter( matrix, function(item){
+        if (item.id == matrixId){
+          return item;
+        }
+      })
+     // console.log(current[0].weight);
+     // console.log("next");
+       var alt = currentDist.value+ current[0].weight;
+       var neighbourDist = distance.filter(function(a){ return a.id == neighbourId })[0];
+
+       //console.log(alt,'+',neighbourDist.value);
+      if(alt < neighbourDist.value){
+
+        _.filter( distance, function(item){
+          if (item.id == neighbourId){
+            item.value = alt;
+          }
+        })
+
+      /*  _.filter( previous, function(item){
+          if (item.id == neighbourId){
+            item.value = alt;
+          }
+        })*/
+
+        previous[neighbourId] = pos
+      }
+
+     }
+   }
+
+    //console.log("FINAL");
+    previous = previous.filter(function(n){ return n != undefined });
+    previous = _.uniq(previous);
+    //console.log(previous);
+
+    return previous;
+
+
+
+
+  }
 //var o = {
 //  width: 500,
 //  height: 100,
