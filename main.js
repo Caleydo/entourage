@@ -98,7 +98,7 @@ define(['jquery', 'd3', 'underscore'], function ($, d3, _) {
         var nodeGroup = svg.append("g");
 
 
-        var RightSvg = d3.select("#right").append("svg").attr('id','rightContainer');
+        var RightSvg = d3.select("#right").append("svg").attr('id','rightContainer').attr("width", 400).attr("height", 700);
 
 
 
@@ -204,6 +204,7 @@ define(['jquery', 'd3', 'underscore'], function ($, d3, _) {
 
   });
 
+
   $( "#menu a" ).bind( "click", function() {
     //alert($(this.attr("id")));
     var id = $(this).attr("id");
@@ -218,11 +219,15 @@ define(['jquery', 'd3', 'underscore'], function ($, d3, _) {
         unselect.attr("style","outline: none");
 
       }
+
     } else {
       $(this).attr("selected", "selected");
       $(this).attr("style","background-color: #3091ff;");
 
+
     }
+
+
   });
 
 
@@ -539,10 +544,6 @@ define(['jquery', 'd3', 'underscore'], function ($, d3, _) {
           targetNode = null;
         }
 
-
-
-
-
       })
 
 // Deselecting all selected nodes by double-clicking on any one of the selected nodes.
@@ -556,70 +557,151 @@ define(['jquery', 'd3', 'underscore'], function ($, d3, _) {
 
 
 // Removed all the red rect and blue lines --------------------
-    rect.on("click", function() {
+ /*removeRed()
+    {
+      rect.on("click", function() {
           console.log("rect");
           d3.event.stopPropagation();
         });
+     }*/
 //---------------------------------------------------------
     check.exit().remove();
 
+// Debug_Mode toggle to show and hide red boxes representing connected nodes:
+
+ $( "#menu b" ).bind( "click", function() {
+    //alert($(this.attr("id")));
+    var id = $(this).attr("id");
+
+    if($(this).attr("selected")) {
+      $(this).attr("selected", false);
+      $(this).attr("style","background-color: #030101;");
+
+     if(id === "debug_mode"){ //If already in debug mode, hide the boxes on click
+      var tt = parent.selectAll("rect").data(nodes);
+         tt.enter()
+           .append("rect")
+           .append("svg:title")
 
 
-    var tt = parent.selectAll("rect").data(nodes);
+         tt.attr("x", function (node) {
+           return node.x - node.width / 2;
+         })
+           .attr("y", function (node) {
 
-    tt.enter()
-      .append("rect")
-      .append("svg:title")
-     // .text(function(node) { return node.name;})
+             return node.y - node.height / 2;
+           })
+           .attr("width", function (node) {
+
+             return node.width;
+           })
+           .attr("height", function (node) {
+             return node.height;
+           })
+
+           .attr("fill", "none")
 
 
-    tt.attr("x", function (node) {
-      return node.x - node.width / 2;
-    })
-      .attr("y", function (node) {
+           .on("mouseover",function(node){
+             var color =  d3.select(this).attr( "style" );
+             if(color == "outline: thick solid green;") {
 
-        return node.y - node.height / 2;
-      })
-      .attr("width", function (node) {
+             }else{
+               d3.select(this)
+                 .attr("style", "outline: thick solid orange;")
+             }
+             div.transition()
+               .duration(200)
+               .style("opacity", .9);
 
-        return node.width;
-      })
-      .attr("height", function (node) {
-        return node.height;
-      })
-      .attr("fill", "rgb(255,0,0)")
-      //.attr("stroke","red")
-      //.attr("fill","none")
-      .on("mouseover",function(node){
-        var color =  d3.select(this).attr( "style" );
-        if(color == "outline: thick solid green;") {
+             div.html(node.name)
+               .style("left", (d3.event.pageX) + "px")
+               .style("top", (d3.event.pageY - 28) + "px");
 
-        }else{
-          d3.select(this)
-            .attr("style", "outline: thick solid orange;")
+           })
+           .on("mouseout",function(){
+             var color =  d3.select(this).attr( "style" );
+             if(color == "outline: thick solid orange;") {
+               d3.select(this)
+                 .attr("style", "outline: none;");
+
+               div.transition()
+                 .duration(500)
+                 .style("opacity", 0);
+             }
+           })
+
+
         }
-        div.transition()
-          .duration(200)
-          .style("opacity", .9);
 
-        div.html(node.name)
-          .style("left", (d3.event.pageX) + "px")
-          .style("top", (d3.event.pageY - 28) + "px");
 
-      })
-      .on("mouseout",function(){
-        var color =  d3.select(this).attr( "style" );
-        if(color == "outline: thick solid orange;") {
-          d3.select(this)
-            .attr("style", "outline: none;");
 
-          div.transition()
-            .duration(500)
-            .style("opacity", 0);
-        }else{
 
-        }
-      })
+    } else { // If not in debug mode, go into the mode by showing the boxes
+      $(this).attr("selected", "selected");
+      $(this).attr("style","background-color: #3091ff;");
+
+              //alert("hiMenu")
+               var tt = parent.selectAll("rect").data(nodes);
+                   //var menuId = "debug_mode"
+                  tt.enter()
+                    .append("rect")
+                    .append("svg:title")
+
+                  tt.attr("x", function (node) {
+                    return node.x - node.width / 2;
+                  })
+                    .attr("y", function (node) {
+
+                      return node.y - node.height / 2;
+                    })
+                    .attr("width", function (node) {
+
+                      return node.width;
+                    })
+                    .attr("height", function (node) {
+                      return node.height;
+                    })
+
+                    .attr("fill", "rgb(255,0,0")
+
+
+                    .on("mouseover",function(node){
+                      var color =  d3.select(this).attr( "style" );
+                      if(color == "outline: thick solid green;") {
+
+                      }else{
+                        d3.select(this)
+                          .attr("style", "outline: thick solid orange;")
+                      }
+                      div.transition()
+                        .duration(200)
+                        .style("opacity", .9);
+
+                      div.html(node.name)
+                        .style("left", (d3.event.pageX) + "px")
+                        .style("top", (d3.event.pageY - 28) + "px");
+
+                    })
+                    .on("mouseout",function(){
+                      var color =  d3.select(this).attr( "style" );
+                      if(color == "outline: thick solid orange;") {
+                        d3.select(this)
+                          .attr("style", "outline: none;");
+
+                        div.transition()
+                          .duration(500)
+                          .style("opacity", 0);
+                      }else{
+
+                      }
+                    })
+
+    }
+
+
+  });
+
 
 
     // tt.exit().remove();

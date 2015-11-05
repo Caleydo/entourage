@@ -1,6 +1,6 @@
 #datalist, #datatree {
   display: inline-block;
-  width: 45%; }
+  width: 30%; }
 
 #datalist table th {
   font-weight: bold; }
@@ -18,11 +18,11 @@ div#menu ul {
 
 div#menu ul a {
   float: left;
-  width: 6em;
+  width: auto;
   text-decoration: none;
   color: white;
   background-color: #030101;
-  padding: 0.2em 0.6em;
+
   border-right: 1px solid white;
 }
 
@@ -30,9 +30,25 @@ div#menu ul a:hover {
   background-color: #ffdcd0;
 }
 
-div#menu ul li {
-  display: inline;
+div#menu ul b {
+  position: relative
+  float: left;
+  width: auto;
+  text-decoration: none;
+  color: white;
+  background-color: #030101;
+
+  border-right: 1px solid white;
 }
+
+div#menu ul b:hover {
+  background-color: #ffdcd0;
+}
+
+ div#menu {
+   display: inline;
+ }
+
 
 
 
