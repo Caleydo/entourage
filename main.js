@@ -471,33 +471,162 @@ define(['jquery', 'd3', 'underscore'], function ($, d3, _) {
           if(jQuery.isEmptyObject(sourceNode)){
             //console.log("Source node");
             sourceNode = node;
+
+            var unselectRect = parent.selectAll("rect")
+
+            var unselectLines = parent.selectAll("lines")
+
+            unselectRect.attr("style","outline: none");
+
+            unselectLines.attr("stroke","transparent");
+
             d3.select(this)
               .attr("style", "outline: thick solid green;");
-            selectedNodes.push(node);
+            // selectedNodes.push(node);
 
           }else{
 
             targetNode = node;
-            //alert(this);
+
             var i;
             //CODE FOR SHORTEST PATH ALGORITHM //
             var path = shortestPathAlgo(matrix,nodes,sourceNode,targetNode);
             //console.log(nodes);
-            console.log(path.length,'---',path);
-            for (i = 0; i < path.length; i += 1) {
+            //console.log(path.length,'---',path);
 
-              var a = _.filter( nodes, function(item) {
-                if (item.id == path[i]) {
+            if(path.length > 2){
+
+             // console.log("more than 2");
+              var edgePoints = []
+              for (i = 0; i < path.length; i += 1) {
+
+
+                //console.log("HERE??");
+                var selectRectId = "rect[id='"+path[i]+"']";
+
+                // console.log(selectRectId);
+                d3.select(selectRectId)
+                  .attr("style", "outline: thick solid green;");
+
+                if(i!=(path.length-1)){
+
+                  // console.log("??");
+
+                  var edgesCheck = _.filter( edges, function(item){
+                    if (item.source.id == path[i]  && item.target.id == path[i+1]){
+                      return item;
+                    }
+                  })
+                  edgesCheck[0].width = d3.select(selectRectId).attr("width");
+                  edgePoints.push(edgesCheck[0]);
+                }
+
+
+              }
+
+
+              //console.log(edgePoints);
+              if(!jQuery.isEmptyObject(edgePoints)){
+
+
+
+                var tt = parent.selectAll("line").data(edgePoints);
+
+                tt.enter()
+                  .append("line");
+
+                tt.attr("x1", function (edge) {
+                  return parseInt(edge.source.x) + parseInt(edge.width/2);
+                })
+                  .attr("y1", function (edge) {
+
+                    return edge.source.y;
+                  })
+                  .attr("x2", function (edge) {
+                    return parseInt(edge.target.x) - parseInt(edge.width/2);
+                  })
+                  .attr("y2", function (edge) {
+                    return edge.target.y;
+                  })
+                  .attr("stroke","green")
+                  .attr("stroke-width","5");
+
+                // tt.exit().remove();
+
+
+
+              }
+            }else if(path.length == 2){
+
+             // console.log("only source and target");
+              var edgePoints = []
+              var edgesCheck = _.filter( edges, function(item){
+                if (item.source.id == path[0]  && item.target.id == path[1]){
                   return item;
                 }
               })
-              console.log("Object",i,"--",a);
-              var id = a[0].id;
-              alert(id);
-              // FOR SELECTING AND DISPLAYING EXSISTING PATHS
+
+  //            console.log(edgesCheck);
+
+              if(!jQuery.isEmptyObject(edgesCheck)) {
+                edgesCheck[0].width = d3.select(selectRectId).attr("width");
+                edgePoints.push(edgesCheck[0]);
+              }
+
+              if(!jQuery.isEmptyObject(edgePoints)){
+
+
+
+                var tt = parent.selectAll("line").data(edgePoints);
+
+                tt.enter()
+                  .append("line");
+
+                tt.attr("x1", function (edge) {
+                  return parseInt(edge.source.x) + parseInt(edge.width/2);
+                })
+                  .attr("y1", function (edge) {
+
+                    return edge.source.y;
+                  })
+                  .attr("x2", function (edge) {
+                    return parseInt(edge.target.x) - parseInt(edge.width/2);
+                  })
+                  .attr("y2", function (edge) {
+                    return edge.target.y;
+                  })
+                  .attr("stroke","green")
+                  .attr("stroke-width","5");
+
+                // tt.exit().remove();
+
+
+
+              }else{
+
+                if (path[0] == sourceNode.id){
+                  var selectRectId = "rect[id='"+path[0]+"']";
+                  d3.select(selectRectId)
+                    .attr("style", "outline: none;");
+                }
+              }
 
 
             }
+            else{
+              if (path[0] == sourceNode.id){
+                var unselectRect = parent.selectAll("rect")
+
+                var unselectLines = parent.selectAll("lines")
+
+                unselectRect.attr("style","outline: none");
+
+                unselectLines.attr("stroke","transparent");
+              }
+            }
+
+            sourceNode = null;
+            targetNode = null;
 
 
           // CODE FOR ORIGINAL NODE SELECTION ONE BY ONE //
@@ -529,10 +658,13 @@ define(['jquery', 'd3', 'underscore'], function ($, d3, _) {
           }
         }else{
 
-          var unselect = parent.selectAll("rect")
+          var unselectRect = parent.selectAll("rect")
 
-          unselect
-            .attr("style","outline: none");
+          var unselectLines = parent.selectAll("lines")
+
+          unselectRect.attr("style","outline: none");
+
+          unselectLines.attr("stroke","transparent");
 
 
           sourceNode = null;
@@ -738,11 +870,11 @@ define(['jquery', 'd3', 'underscore'], function ($, d3, _) {
       var prev = {}
       dist.id = nodes[i].id;
       dist.value = Infinity;
-      //prev.id = nodes[i].id;
-      //prev.value = null;
+      prev.id = nodes[i].id;
+      prev.value = null;
       distance.push(dist);
-      previous[nodes[i].id] = undefined;
-      //previous.push(prev);
+      // previous[nodes[i].id] = undefined;
+      previous.push(prev);
       Q.push(nodes[i].id);
 
     }
@@ -796,7 +928,7 @@ define(['jquery', 'd3', 'underscore'], function ($, d3, _) {
       var currentDist = distance.filter(function(a){ return a.id == pos })[0];
       if (currentDist.value == Infinity || pos == targetNode.id) {
           //console.log("stop!!");
-          //previous[pos] = targetNode.id;
+         // previous.push(targetNode.id);
           break;
       }
 
@@ -827,24 +959,44 @@ define(['jquery', 'd3', 'underscore'], function ($, d3, _) {
           }
         })
 
-      /*  _.filter( previous, function(item){
+        _.filter( previous, function(item){
           if (item.id == neighbourId){
-            item.value = alt;
+            item.value = pos;
           }
-        })*/
+        })
 
-        previous[neighbourId] = pos
+       // previous[neighbourId] = pos
       }
 
      }
    }
 
-    //console.log("FINAL");
-    previous = previous.filter(function(n){ return n != undefined });
-    previous = _.uniq(previous);
-    //console.log(previous);
 
-    return previous;
+
+    var path = [];
+    pos = targetNode.id;
+   //
+    //console.log("CHERE??");
+    // console.log(previous);
+
+    path.push(pos);
+    while(pos!=sourceNode.id){
+
+      // console.log("pos",pos);
+      var prevNode = _.filter( previous, function(item){
+        if (item.id == pos){
+          return item;
+        }
+      })
+
+      pos = prevNode[0].value;
+      path.push(pos);
+    }
+
+   // console.log(path);
+
+
+    return path.reverse();
 
 
 
