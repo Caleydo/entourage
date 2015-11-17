@@ -185,6 +185,7 @@ define(['jquery', 'd3', 'underscore'], function ($, d3, _) {
 
     });
 
+
   });
 
 
@@ -598,7 +599,7 @@ define(['jquery', 'd3', 'underscore'], function ($, d3, _) {
 
 // Debug_Mode toggle to show and hide red boxes representing connected nodes:
 
- $( "#menu b" ).bind( "click", function() {
+ $( "#menuB a" ).bind( "click", function() {
     //alert($(this.attr("id")));
     var id = $(this).attr("id");
 
@@ -659,6 +660,29 @@ define(['jquery', 'd3', 'underscore'], function ($, d3, _) {
                  .style("opacity", 0);
              }
            })
+
+          // Removing blue lines that denote the available edges:
+
+          var tt = parent.selectAll("line").data(edges);
+
+              tt.enter()
+                .append("line");
+
+              tt.attr("x1", function (edge) {
+                return edge.source.x;
+              })
+                .attr("y1", function (edge) {
+
+                  return edge.source.y;
+                })
+                .attr("x2", function (edge) {
+                  return edge.target.x;
+                })
+                .attr("y2", function (edge) {
+                  return edge.target.y;
+                })
+                .attr("stroke","none"
+                          );
 
 
         }
@@ -725,42 +749,37 @@ define(['jquery', 'd3', 'underscore'], function ($, d3, _) {
 
                       }
                     })
+    // In debug mode, the lines show:
+    var tt = parent.selectAll("line").data(edges);
+
+        tt.enter()
+          .append("line");
+
+        tt.attr("x1", function (edge) {
+          return edge.source.x;
+        })
+          .attr("y1", function (edge) {
+
+            return edge.source.y;
+          })
+          .attr("x2", function (edge) {
+            return edge.target.x;
+          })
+          .attr("y2", function (edge) {
+            return edge.target.y;
+          })
+          .attr("stroke", function(edge) {
+            return edge.edgeClass === "relation" ? "rgb(0,0,255)" : "rgb(0,255,0)";
+          });
+          //.attr("stroke-dasharray", function(edge) {
+          //  return edge.edgeClass === "relation" ? "0,0" : "1,20";
+          //});
+        tt.exit().remove();
 
     }
 
 
   });
-
-
-
-    // tt.exit().remove();
-
-    var tt = parent.selectAll("line").data(edges);
-
-    tt.enter()
-      .append("line");
-
-    tt.attr("x1", function (edge) {
-      return edge.source.x;
-    })
-      .attr("y1", function (edge) {
-
-        return edge.source.y;
-      })
-      .attr("x2", function (edge) {
-        return edge.target.x;
-      })
-      .attr("y2", function (edge) {
-        return edge.target.y;
-      })
-      .attr("stroke", function(edge) {
-        return edge.edgeClass === "relation" ? "rgb(0,0,255)" : "rgb(0,255,0)";
-      });
-      //.attr("stroke-dasharray", function(edge) {
-      //  return edge.edgeClass === "relation" ? "0,0" : "1,20";
-      //});
-    tt.exit().remove();
-
 
 
     //var entries = $(data).find('entry');
