@@ -1,7 +1,7 @@
 /**
  * Created by Christian on 11.12.2014.
  */
-define(['jquery', 'd3', 'underscore'], function ($, d3, _) {
+define(['jquery', 'd3', 'underscore', '../caleydo_core/ajax', '../pathfinder_ccle/ccle'], function ($, d3, _,ajax, ccle) {
   'use strict';
   //$.ajax({
   //
@@ -56,6 +56,7 @@ define(['jquery', 'd3', 'underscore'], function ($, d3, _) {
     //});
 
     var nodeGroup;
+    var NewPath;
    $.get("/api/kegg_pathways/list", function (response) {
 
       if (typeof(response) === "string") {
@@ -161,7 +162,7 @@ define(['jquery', 'd3', 'underscore'], function ($, d3, _) {
       //alert($(this.attr("id")));
       var id = $(this).attr("id");
 
-      alert(id);
+      // alert(id);
 
 
       if($(this).attr("selected")) {
@@ -179,6 +180,29 @@ define(['jquery', 'd3', 'underscore'], function ($, d3, _) {
         $(this).attr("selected", "selected");
         $(this).attr("style","background-color: #3091ff;");
 
+
+      }
+
+      if(id === 'mrnaexpression' || id === 'copynumbervariation'){
+        alert("selected");
+        var row;
+        var col;
+        ajax.getAPIJSON('/ccle/' + id + '/rows').then(function (rows){
+
+          // row = rows;
+          //console.log(rows);
+        });
+        ajax.getAPIJSON('/ccle/' + id + '/cols').then(function (rows){
+
+          //col = cols;
+          //console.log(rows);
+        });
+
+        ajax.getAPIJSON('/ccle/' + id + '/stats').then(function (data) {
+
+        });
+
+        PIK3R5
 
       }
 
@@ -359,7 +383,7 @@ define(['jquery', 'd3', 'underscore'], function ($, d3, _) {
 
 
 
-   //console.log(edges);
+   console.log(nodes);
    /* console.log("This is test");
 
     $.each(allNodes, function(index, val) {
@@ -397,7 +421,7 @@ define(['jquery', 'd3', 'underscore'], function ($, d3, _) {
       })
       .on("mouseover",function(node){
         var color =  d3.select(this).attr( "style" );
-        if(color == "outline: thick solid green;") {
+        if(color == "outline: thick solid green;" || color == "outline: thick solid yellow;" || color == "outline: thick solid red;") {
 
         }else{
           d3.select(this)
@@ -430,51 +454,54 @@ define(['jquery', 'd3', 'underscore'], function ($, d3, _) {
 
        // console.log(node);
 
+
+
         if($( "#menu a#pathway" ).attr('selected')){
+
+          // Create Adjacency Matrix
+          var matrix = createAdjacencyMatrix(nodes,edges);
+          //console.log(matrix);
+
+          //console.log(NewPath);
+          var color =  d3.select(this).attr( "style" );
+          if(color == "outline: thick solid yellow;") {
+            //alert("SourceNode clicked");
+            unselectNodes(parent,'');
+            sourceNode = null;
+            targetNode = null;
+            return;
+
+          }
 
           if(jQuery.isEmptyObject(sourceNode)){
             sourceNode = node;
+            var SourceNodeTrack = this;
             unselectNodes(parent,this);
 
           }else{
 
             targetNode = node;
+            var rectSourceId = "rect[id='"+sourceNode.id+"']";
+            unselectNodes(parent,rectSourceId);
 
-            // Create Adjacency Matrix
-            var matrix = createAdjacencyMatrix(nodes,edges);
-            //console.log(matrix);
             var i;
             //CODE FOR SHORTEST PATH ALGORITHM //
             var path = shortestPathAlgo(matrix,nodes,sourceNode,targetNode);
-
-            console.log(path.length,'---',path);
-
-            // console.log(targetNode)
-            // console.log(edges)
-            //var current = _.filter( edges, function(item){
-            //  if (item.source.id == 6){
-            //    return item;
-            //  }
-            //})
-
-            //console.log(current);
             if(path.length > 2){
 
-             // console.log("more than 2");
-              var edgePoints = []
+              var edgePoints = [];
               for (i = 0; i < path.length; i += 1) {
 
-
-                //console.log("HERE??");
                 var selectRectId = "rect[id='"+path[i]+"']";
 
                 // console.log(selectRectId);
-                d3.select(selectRectId)
-                  .attr("style", "outline: thick solid green;");
-
+                if (path[i] != sourceNode.id && path[i] != targetNode.id){
+                  highlightNodes(selectRectId,'pathNode');
+                }
+                if(path[i] == targetNode.id){
+                  highlightNodes(selectRectId,'targetNode');
+                }
                 if(i!=(path.length-1)){
-
-                  // console.log("??");
 
                   var edgesCheck = _.filter( edges, function(item){
                     if (item.source.id == path[i]  && item.target.id == path[i+1]){
@@ -494,41 +521,56 @@ define(['jquery', 'd3', 'underscore'], function ($, d3, _) {
               }
             }else if(path.length == 2){
 
-             console.log("only source and target");
-              var edgePoints = []
+             //console.log("only source and target");
+
+              //console.log(path);
+              var edgePoints = [];
               var edgesCheck = _.filter( edges, function(item){
                 if (item.source.id == path[0]  && item.target.id == path[1]){
                   return item;
                 }
               })
 
-              // console.log(edgesCheck);
+
+              //console.log(edgesCheck);
 
               if(!jQuery.isEmptyObject(edgesCheck)) {
-                edgesCheck[0].width = d3.select(selectRectId).attr("width");
-                edgePoints.push(edgesCheck[0]);
-              }
 
-              if(!jQuery.isEmptyObject(edgePoints)){
+                for(i = 0; i < path.length; i += 1){
+
+                  var selectRectId = "rect[id='"+path[i]+"']";
+                  edgesCheck[0].width = d3.select(selectRectId).attr("width");
+                  edgePoints.push(edgesCheck[0]);
+                }
+
+                if(!jQuery.isEmptyObject(edgePoints)){
                   drawConnectingLines(parent,edgePoints);
+                }
+                // console.log(path);
+                var selectRectId = "rect[id='"+path[1]+"']";
+                highlightNodes(selectRectId,'targetNode');
+
               }else{
 
-                if (path[0] == sourceNode.id){
-                  var selectRectId = "rect[id='"+path[0]+"']";
-                  d3.select(selectRectId)
-                    .attr("style", "outline: none;");
+                // If no path is found, deselect source and target
+                for(i = 0; i < path.length; i += 1){
+
+                  var selectRectId = "rect[id='"+path[i]+"']";
+                  highlightNodes(selectRectId,'none');
+
                 }
+                sourceNode = null;
+                targetNode = null;
+
               }
-
-
             }
             else{
               if (path[0] == sourceNode.id){
-                unselectNodes(parent,'')
+                unselectNodes(parent,'');
               }
             }
 
-            sourceNode = null;
+            //sourceNode = node;
             targetNode = null;
 
 
@@ -560,15 +602,6 @@ define(['jquery', 'd3', 'underscore'], function ($, d3, _) {
 
           }
         }else{
-
-          //var unselectRect = parent.selectAll("rect")
-          //
-          //var unselectLines = parent.selectAll("lines")
-          //
-          //unselectRect.attr("style","outline: none");
-          //
-          //unselectLines.attr("stroke","transparent");
-
           unselectNodes(parent,'');
           sourceNode = null;
           targetNode = null;
@@ -897,8 +930,9 @@ define(['jquery', 'd3', 'underscore'], function ($, d3, _) {
 
       var pos = 0;
       //console.log("distance Iterations",distance);
-    //  console.log("previous Iterations",previous);
-     // console.log("Q-->",Q,'length-->',Q.length);
+      // console.log("previous Iterations",previous);
+      //console.log("Q-->",Q,'length-->',Q.length);
+      //console.log("S-->",S);
       for (i = 0; i < Q.length; i += 1) {
 
         var minDist = distance.filter(function(a){ return a.id == Q[i] })[0];
@@ -910,10 +944,11 @@ define(['jquery', 'd3', 'underscore'], function ($, d3, _) {
         }
       }
 
-    //  console.log(min,'--',pos);
-      S.push(pos);
-      Q.pop(pos);
+      // console.log(min,'--',pos);
+      var index = $.inArray(pos,Q);
 
+      Q.splice(index, 1);
+      S.push(pos);
 
      // NEIGHBOUR FINDING STEP //
 
@@ -986,7 +1021,7 @@ define(['jquery', 'd3', 'underscore'], function ($, d3, _) {
         if (item.id == pos){
           return item;
         }
-      })
+      });
 
       pos = prevNode[0].value;
       path.push(pos);
@@ -1003,17 +1038,19 @@ define(['jquery', 'd3', 'underscore'], function ($, d3, _) {
   }
 
   function unselectNodes(parent,selectedNode){
-    var unselectRect = parent.selectAll("rect")
 
-    var unselectLines = parent.selectAll("lines")
+    var unselectRect = parent.selectAll("rect");
+
+    var unselectLines = parent.selectAll("line");
 
     unselectRect.attr("style","outline: none");
 
     unselectLines.attr("stroke","transparent");
+    //unselectLines.attr("stroke-width","0");
+
 
     if(!jQuery.isEmptyObject(selectedNode)){
-      d3.select(selectedNode)
-        .attr("style", "outline: thick solid green;");
+      highlightNodes(selectedNode,'sourceNode');
     }
 
 
@@ -1021,7 +1058,7 @@ define(['jquery', 'd3', 'underscore'], function ($, d3, _) {
 
   function drawConnectingLines(parent,edgePoints){
 
-    console.log("entering here???");
+    //console.log("entering here???");
     var tt = parent.selectAll("line").data(edgePoints);
 
     tt.enter()
@@ -1043,6 +1080,23 @@ define(['jquery', 'd3', 'underscore'], function ($, d3, _) {
       .attr("stroke","green")
       .attr("stroke-width","5");
 
+  }
+
+
+  function highlightNodes(nodeH,nodeType){
+
+    var color = 'none';
+    if (nodeType == 'sourceNode'){
+      color = 'yellow';
+    }else if(nodeType == 'pathNode'){
+      color = 'green';
+    }else if(nodeType == 'targetNode'){
+      color = 'red';
+    }
+
+    var prop = "outline: thick solid "+color+";";
+    d3.select(nodeH)
+      .attr("style",prop);
   }
 //var o = {
 //  width: 500,
