@@ -49,7 +49,10 @@ define(['jquery', 'd3', 'underscore', '../caleydo_core/ajax', '../pathfinder_ccl
   //});
 
 
-
+  var a;
+  var b = 50;
+  var addText;
+  var textElements;
   $(document).ready(function () {
     //$.get("/api/pathway", function (resp) {
     // $('<h1>'+resp+'</h1>').appendTo('body');
@@ -57,6 +60,7 @@ define(['jquery', 'd3', 'underscore', '../caleydo_core/ajax', '../pathfinder_ccl
 
     var nodeGroup;
     var NewPath;
+    var rightNodeGroup;
    $.get("/api/kegg_pathways/list", function (response) {
 
       if (typeof(response) === "string") {
@@ -80,16 +84,16 @@ define(['jquery', 'd3', 'underscore', '../caleydo_core/ajax', '../pathfinder_ccl
 
 
         svg.append("rect");
-
+        svg.append("text");
         nodeGroup = svg.append("g");
 
 
-        var RightSvg = d3.select("#right").append("svg").attr('id','rightContainer').attr("width", 400).attr("height", 700);
+        /*var RightSvg = d3.select("#right").append("svg").attr('id','rightContainer').attr("width", 400).attr("height", 700);
 
 
 
         RightSvg.append("rect");
-
+*/
 
 
 
@@ -108,8 +112,9 @@ define(['jquery', 'd3', 'underscore', '../caleydo_core/ajax', '../pathfinder_ccl
           var img = $("<img/>").attr("src", imgUrl).load(function () {
             var width = this.width;
             var height = this.height;
+            a = width;
 
-            svg.attr("width", width)
+            svg.attr("width", width+300)
               .attr("height", height);
 
 
@@ -131,9 +136,9 @@ define(['jquery', 'd3', 'underscore', '../caleydo_core/ajax', '../pathfinder_ccl
               .attr('height', height);
 
 
-            RightSvg.select("rect")
+            /*RightSvg.select("rect")
               .attr('x',width+10)
-              .attr("height",height)
+              .attr("height",height)*/
 
             $.get(xmlUrl, function (response) {
               render(nodeGroup, response);
@@ -176,6 +181,10 @@ define(['jquery', 'd3', 'underscore', '../caleydo_core/ajax', '../pathfinder_ccl
 
         }
 
+        if(id === "enroute"){
+                var unselect = d3.select("body").selectAll("rect")
+                unselect.attr("style","outline:none");
+                }
       } else {
         $(this).attr("selected", "selected");
         $(this).attr("style","background-color: #3091ff;");
@@ -202,7 +211,7 @@ define(['jquery', 'd3', 'underscore', '../caleydo_core/ajax', '../pathfinder_ccl
 
         });
 
-        PIK3R5
+        //PIK3R5
 
       }
 
@@ -453,10 +462,13 @@ define(['jquery', 'd3', 'underscore', '../caleydo_core/ajax', '../pathfinder_ccl
       .on("click",function(node){
 
        // console.log(node);
+        var text = node.name;
+        var name = String(text);
+        var nodeName = name.split(",");
+        alert(nodeName[0]);
 
 
-
-        if($( "#menu a#pathway" ).attr('selected')){
+        if($( "#menu a#pathway" ).attr('selected')|| $("#menu a#enroute").attr('selected')){
 
           // Create Adjacency Matrix
           var matrix = createAdjacencyMatrix(nodes,edges);
@@ -475,12 +487,20 @@ define(['jquery', 'd3', 'underscore', '../caleydo_core/ajax', '../pathfinder_ccl
 
           if(jQuery.isEmptyObject(sourceNode)){
             sourceNode = node;
+
+            text = node.name;
+            name = String(text);
+            nodeName = name.split(",");
+            g.append("text").text(nodeName[0]);
             var SourceNodeTrack = this;
             unselectNodes(parent,this);
 
           }else{
 
             targetNode = node;
+            text = node.name;
+            name = String(text);
+            nodeName = name.split(",");
             var rectSourceId = "rect[id='"+sourceNode.id+"']";
             unselectNodes(parent,rectSourceId);
 
@@ -1050,7 +1070,21 @@ define(['jquery', 'd3', 'underscore', '../caleydo_core/ajax', '../pathfinder_ccl
 
 
     if(!jQuery.isEmptyObject(selectedNode)){
-      highlightNodes(selectedNode,'sourceNode');
+     if($( "#menu a#enroute" ).attr('selected')){
+          d3.select(selectedNode)
+            .attr("style", "outline: thick solid green;")
+            .attr("x", a+100).attr("y",b).attr("width",70).attr("height", 20);
+           //d3.append("text").attr("x", a+100).text(nodeText);
+           //alert(newText);
+          b = b+50;
+
+
+          }
+          else{
+                highlightNodes(selectedNode,'sourceNode');
+
+          }
+
     }
 
 
@@ -1093,10 +1127,23 @@ define(['jquery', 'd3', 'underscore', '../caleydo_core/ajax', '../pathfinder_ccl
     }else if(nodeType == 'targetNode'){
       color = 'red';
     }
+    if($( "#menu a#enroute" ).attr('selected')){
+              d3.select(selectedNode)
+                .attr("style", "outline: thick solid green;")
+                .attr("x", a+100).attr("y",b).attr("width",70).attr("height", 20);
+               //d3.append("text").attr("x", a+100).text(nodeText);
+               //alert(newText);
+              b = b+50;
 
-    var prop = "outline: thick solid "+color+";";
-    d3.select(nodeH)
-      .attr("style",prop);
+
+              }
+              else{
+                   var prop = "outline: thick solid "+color+";";
+                       d3.select(nodeH)
+                         .attr("style",prop);
+
+              }
+
   }
 //var o = {
 //  width: 500,
