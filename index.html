@@ -1,122 +1,140 @@
 <!DOCTYPE html>
-<html>
-<head lang="en">
-  <meta charset="UTF-8">
-  <title></title>
+<html lang="en">
+
+<head>
+
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <title>Simple Sidebar - Start Bootstrap Template</title>
+
+    <!-- Bootstrap Core CSS -->
+    <link href="css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
-  <script src="/caleydo_web.js"></script>
+
+    <!-- Custom CSS -->
+    <link href="css/simple-sidebar.css" rel="stylesheet">
+
+    <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+        <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+
+    <![endif]-->
+
 </head>
+
 <body>
 
-<div id="menu">
-<!--  <svg id="menu">
-    <g id="menuLinks">
-      <ul>
-        <li><a href="#">Debug Mode</a></li>
-        <li><a href="#" id="pathway">Pathways</a></li>
-        <li><a href="#">EnRoute</a></li>
-      </ul>
-    </g>
-    </svg>-->
-  <ul>
-    <!--<li><b href="#" id="debug_mode">Debug Mode</a></li>-->
-    <li><a href="#" id="pathway">Pathways</a></li>
-    <li><a href="#" id="enroute">EnRoute</a></li>
-    <li><a href="#" id="mrnaexpression"> mRNA</a></li>
-    <li><a href="#" id="copynumbervariation"> Copy Number </a></li>
+<div class="navbar navbar-inverse navbar-fixed-top">
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand">ENTOURAGE</a>
+    </div>
+    <div class="collapse navbar-collapse">
+      <div id="menu">
+        <ul class="nav navbar-nav">
 
-  </ul>
-</div>
 
-<div id="menuB">
-  <ul>
-    <li><a href="#" id="debug_mode">Debug Mode</a></li>
-  </ul>
-</div>
 
-<div id="selection">
+              <!--<li><b href="#" id="debug_mode">Debug Mode</a></li>-->
+              <li><a href="#" id="pathway">Pathways</a></li>
+              <li><a href="#" id="enroute">EnRoute</a></li>
+              <li><a href="#" id="mrnaexpression"> mRNA</a></li>
+              <li><a href="#" id="copynumbervariation"> Copy Number </a></li>
+              <li><a href="#" id="debug_mode">Debug Mode</a></li>
 
-</div>
-<div id="left">
+
+
+          <!--<li class="active"><a href="#">Home</a></li>-->
+          <!--<li><a href="#about">About</a></li>-->
+          <!--<li><a href="#contact">Contact</a></li>-->
+        </ul>
+      </div>
+    </div><!--/.nav-collapse -->
   </div>
-<div id="right">
-  </div>
+</div>
+
+    <div id="wrapper">
+
+        <!-- Sidebar -->
+        <div id="sidebar-wrapper" >
+
+          <div id="Info" style="color:white;margin-top:60px;">
+
+            <h3> DataSet Info </h3>
+            <h4> DataSet: </h4><label id="dataset"></label> <br/>
+            <h4> Processing Info:</h4> <br/>
+            CellLines:<label id="celLines"></label> <br/>
+            Genes:<label id="genes"></label> <br/> <br/>
+            <h4> Stats:</h4>
+            Mean:		<label id="mean"></label> <br/>
+            Std.Dev: <label id="std"></label> <br/>
+            Max:		<label id="max"></label> <br/>
+            Min:			<label id="min"></label> <br/>
+
+          </div>
 
 
-<!--<script type="text/javascript">-->
+        </div>
+        <!-- /#sidebar-wrapper -->
 
-  <!--var dataset = [25, 7, 20, 26, 11, 8, 25, 14, 23, 19,-->
-    <!--14, 11, 22, 29, 11, 13, 12, 17, 18, 10, 24, 18, 25, 9, 3];-->
-  <!--//  var dataset = [];-->
-  <!--//  for (var i = 0; i < 25; i++) {-->
-  <!--//    var newNumber = Math.floor(Math.random() * 30);-->
-  <!--//    dataset.push(newNumber);-->
-  <!--//  }-->
-  <!--//  var dataset = [5, 10, 15, 20, 25];-->
-
-  <!--var w = 500;-->
-  <!--var h = 100;-->
-  <!--var barPadding = 1;-->
-  <!--var padding = 30;-->
-  <!--var plotWidth = w-padding;-->
-
-  <!--var svg = d3.select("body")-->
-    <!--.append("svg")-->
-    <!--.attr("width", w)-->
-    <!--.attr("height", h);-->
+        <!-- Page Content -->
+        <div id="page-content-wrapper">
+            <div class="container-fluid">
+                <div class="row">
+                    <div class="col-lg-12">
 
 
-  <!--var yScale = d3.scale.linear().domain([0, d3.max(dataset, function (d) {-->
-    <!--return d-->
-  <!--})]).range([h, 0]);-->
-
-  <!--var axis = d3.svg.axis().-->
-    <!--scale(yScale).-->
-    <!--orient("right")-->
-    <!--.ticks(3);-->
-
-  <!--svg.append("g")-->
-    <!--.attr("class", "axis")-->
-    <!--.attr("transform", "translate("+plotWidth+", 0)")-->
-    <!--.call(axis);-->
-
-  <!--svg.selectAll("rect")-->
-    <!--.data(dataset)-->
-    <!--.enter()-->
-    <!--.append("rect")-->
-    <!--.attr("x", function (d, i) {-->
-      <!--return i * (plotWidth / dataset.length);-->
-    <!--})-->
-    <!--.attr("y", function (d) {-->
-      <!--return yScale(d);-->
-    <!--})-->
-    <!--.attr("width", plotWidth / dataset.length - barPadding)-->
-    <!--.attr("height", function (d) {-->
-      <!--return h-yScale(d);-->
-    <!--})-->
-    <!--.attr("fill", function (d) {-->
-      <!--return "rgb(0,0," + (d * 10) + ")";-->
-    <!--});-->
 
 
-  <!--var tt = svg.selectAll("text").data(dataset);-->
-  <!--tt.enter()-->
-    <!--.append("text")-->
-    <!--.attr("y", function (d) {-->
-      <!--return 50;//(yScale(d)) + 15;-->
-    <!--})-->
-    <!--.attr("font-family", "sans-serif")-->
-    <!--.attr("font-size", "11px")-->
-    <!--.attr("fill", "red")-->
-    <!--.attr("text-anchor", "middle");-->
-  <!--tt.text(function (d) {-->
-    <!--return d;-->
-  <!--}).attr("x", function (d, i) {-->
-    <!--return i * (plotWidth / dataset.length);//+ (plotWidth / dataset.length - barPadding) / 2;-->
-  <!--});-->
-  <!--tt.exit().remove();-->
 
+                            <div id="selection" style="margin-top:35px;">
 
-<!--</script>-->
+                              <a href="#menu-toggle" class="btn btn-default" id="menu-toggle">Toggle Menu</a>
+                            </div>
+
+                            <div id="left">
+                            </div>
+                            <div id="right">
+                            </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- /#page-content-wrapper -->
+
+    </div>
+    <!-- /#wrapper -->
+
+    <!-- jQuery -->
+    <script src="js/jquery.js"></script>
+    <script src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.11.4/jquery-ui.js"></script>
+    <!-- Bootstrap Core JavaScript -->
+    <script src="js/bootstrap.min.js"></script>
+
+    <script src="/caleydo_web.js"></script>
+    <!-- Menu Toggle Script -->
+    <script>
+    $("#menu-toggle").click(function(e) {
+        e.preventDefault();
+        $("#wrapper").toggleClass("toggled");
+    });
+    $( "#dataSec" ).accordion({
+      collapsible: true,
+      active: false
+    });
+    </script>
+
 </body>
+
 </html>

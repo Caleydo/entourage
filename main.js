@@ -1,8 +1,9 @@
 /**
  * Created by Christian on 11.12.2014.
  */
-define(['jquery', 'd3', 'underscore', '../caleydo_core/ajax', '../pathfinder_ccle/ccle'], function ($, d3, _,ajax, ccle) {
+define(['jquery', 'd3', 'underscore', '../caleydo_core/ajax', '../pathfinder_ccle/ccle'], function ($, d3, _, ajax, ccle) {
   'use strict';
+
   //$.ajax({
   //
   //  // The 'type' property sets the HTTP method.
@@ -49,15 +50,16 @@ define(['jquery', 'd3', 'underscore', '../caleydo_core/ajax', '../pathfinder_ccl
   //});
 
 
-
   $(document).ready(function () {
     //$.get("/api/pathway", function (resp) {
     // $('<h1>'+resp+'</h1>').appendTo('body');
     //});
 
     var nodeGroup;
-    var NewPath;
-   $.get("/api/kegg_pathways/list", function (response) {
+    var nodeInfo = [];
+    var nodeNames = [];
+    var allDatasets = {};
+    $.get("/api/kegg_pathways/list", function (response) {
 
       if (typeof(response) === "string") {
         var entries = response.split("\n");
@@ -73,7 +75,7 @@ define(['jquery', 'd3', 'underscore', '../caleydo_core/ajax', '../pathfinder_ccl
 
         $('</br>').appendTo('#selection');
 
-        var svg = d3.select("#left").append("svg").attr('id','leftContainer');
+        var svg = d3.select("#left").append("svg").attr('id', 'leftContainer');
         var image = svg.append("defs")
           .append('pattern')
           .append("image");
@@ -84,19 +86,10 @@ define(['jquery', 'd3', 'underscore', '../caleydo_core/ajax', '../pathfinder_ccl
         nodeGroup = svg.append("g");
 
 
-        var RightSvg = d3.select("#right").append("svg").attr('id','rightContainer').attr("width", 400).attr("height", 700);
-
+        var RightSvg = d3.select("#right").append("svg").attr('id', 'rightContainer').attr("width", 400).attr("height", 700);
 
 
         RightSvg.append("rect");
-
-
-
-
-
-        //image.on("load", function() {
-        //  console.log("width: " + this.width + ", height: "+this.height);
-        //});
 
 
         $(selectPathway).on("change", function () {
@@ -111,8 +104,6 @@ define(['jquery', 'd3', 'underscore', '../caleydo_core/ajax', '../pathfinder_ccl
 
             svg.attr("width", width)
               .attr("height", height);
-
-
 
 
             svg.select("defs")
@@ -132,14 +123,20 @@ define(['jquery', 'd3', 'underscore', '../caleydo_core/ajax', '../pathfinder_ccl
 
 
             RightSvg.select("rect")
-              .attr('x',width+10)
-              .attr("height",height)
+              .attr('x', width + 10)
+              .attr("height", height)
 
             $.get(xmlUrl, function (response) {
               render(nodeGroup, response);
+              nodeNames = getNodeNames(response);
+              nodeInfo = getNodeInfo(response);
+              //console.log(nodeInfo);
+              allDatasets = getInfoDatasets(nodeNames);
+
+
             });
 
-            console.log(selectedMenuLink);
+            //  console.log(selectedMenuLink);
           });
           //img.appendTo("body");
 
@@ -150,59 +147,160 @@ define(['jquery', 'd3', 'underscore', '../caleydo_core/ajax', '../pathfinder_ccl
         //d3.select("body").append("p").text(pwMapIDs[0][1]);
         //d3.select("body").append("img").attr("src", "http://rest.kegg.jp/get/" + pwMapIDs[0][0] + "/image");
       }
-    }) .done(function() {
-      //alert( "second success" );
-    })
-      .fail(function(xhr, err) {
-       // alert("erroR");
+    }).done(function () {
+        //alert( "second success" );
+      })
+      .fail(function (xhr, err) {
+        // alert("erroR");
 
       });
 
-    $( "#menu a" ).bind( "click", function() {
+    $("#menu a").bind("click", function () {
       //alert($(this.attr("id")));
       var id = $(this).attr("id");
 
       // alert(id);
 
 
-      if($(this).attr("selected")) {
+      if ($(this).attr("selected")) {
         $(this).attr("selected", false);
-        $(this).attr("style","background-color: #030101;");
-        if(id === "pathway"){
+        $(this).attr("style", "background-color: #030101;");
+        if (id === "pathway") {
 
-          var unselect = d3.select("body").selectAll("rect")
+          var unselect = d3.select("body").selectAll("rect");
 
-          unselect.attr("style","outline: none");
+          unselect.attr("style", "outline: none");
 
         }
 
       } else {
         $(this).attr("selected", "selected");
-        $(this).attr("style","background-color: #3091ff;");
+        $(this).attr("style", "background-color: #3091ff;");
 
 
       }
 
-      if(id === 'mrnaexpression' || id === 'copynumbervariation'){
-        alert("selected");
-        var row;
-        var col;
-        ajax.getAPIJSON('/ccle/' + id + '/rows').then(function (rows){
+      if (id === 'mrnaexpression' || id === 'copynumbervariation') {
 
-          // row = rows;
-          //console.log(rows);
+        var dataset = Object.keys(allDatasets);
+        var color;
+        var datasetName;
+
+        if (id === 'mrnaexpression') {
+          color = "purple"
+          datasetName = "mRNA Expression";
+        }
+        if (id === 'copynumbervariation') {
+          color = "green";
+          datasetName = "Copy Number Expression";
+        }
+
+        $('#dataset').html(datasetName);
+
+        ccle.rows(id).then(function (data) {
+          $('#genes').html(data.length);
         });
-        ajax.getAPIJSON('/ccle/' + id + '/cols').then(function (rows){
 
-          //col = cols;
-          //console.log(rows);
+        ccle.cols(id).then(function (data) {
+          $('#celLines').html(data.length);
         });
 
-        ajax.getAPIJSON('/ccle/' + id + '/stats').then(function (data) {
-
+        ccle.stats(id).then(function (data) {
+          $('#mean').html(data.mean);
+          $('#std').html(data.std);
+          $('#max').html(data.max);
+          $('#min').html(data.min);
         });
 
-        PIK3R5
+
+        var group = Object.keys(allDatasets[id]);
+
+        var color = d3.scale.linear()
+          .domain([-10, 0, 10])
+          .range(["blue", "white", "red"]);
+
+
+        var rectBar = d3.select("#leftContainer");
+
+        var nodeInData = allDatasets[id][group[0]];
+
+        var nodeSet = Object.keys(nodeInData);
+
+        nodeNames.forEach(function (d, i) {
+
+
+          var node = nodeNames[i];
+       //   console.log(node);
+          //console.log(nodeInfo[i]);
+          var nodeId = nodeInfo[i].id;
+          var nodeN = nodeInfo[i].name;
+          var nodeX = nodeInfo[i].x;
+          var nodeY = nodeInfo[i].y;
+          var nodeH = nodeInfo[i].height;
+          var nodeW = nodeInfo[i].width;
+          var nodeAvg = 0;
+          var varianceAvg = 0;
+
+
+          // To check if the this node exsists in the data from dataset
+          var k = $.inArray(node, nodeSet);
+          //   console.log(k);
+
+          if (k != -1) {
+            group.forEach(function (d, i) {
+
+
+              var valueList = allDatasets[id][group[i]][node].data;
+
+              var statsList = allDatasets[id][group[i]][node].stats;
+
+              //console.log(node,'-->',group[i],"---",statsList.std);
+              // console.log(node,'-->',group[i],'std:--',statsList.std,'var:--',Math.pow(statsList.std, 2));
+              for (var i = 0; i <= valueList.length - 1; i++) {
+                nodeAvg += valueList[i];
+
+              }
+
+              //  varianceAvg += Math.pow(statsList.std, 2);
+              varianceAvg += statsList.std;
+              varianceAvg /= statsList.numElements;
+              nodeAvg /= statsList.numElements;
+              // console.log(valueList);
+
+            });
+            //console.log(node, '---', nodeAvg, '---', color(nodeAvg), '--->', varianceAvg);
+
+            var selectRectId = "rect[id='" + nodeId + "']";
+            d3.select(selectRectId)
+              .attr("fill", color(nodeAvg));
+
+
+            rectBar.append("svg:rect")
+              .attr("x", nodeX - nodeW / 2)
+              .attr("y", nodeY - nodeH / 2 - 5)
+              .attr("height", 5)
+              .attr("width", nodeW)
+              .attr("style", "stroke:black;stroke-width:1")
+              .attr("fill", "none");
+
+
+            rectBar.append("svg:rect")
+              .attr("x", nodeX - nodeW / 2)
+              .attr("y", nodeY - nodeH / 2 - 5)
+              .attr("height", 5)
+              .attr("width", varianceAvg * 100)
+              .attr("fill", "green");
+
+
+            //var nodeNLen = nodeN.split(",");
+            //console.log(nodeNLen);
+            //if (nodeNLen.length > 0) {
+            //  console.log("draw triangle");
+            //}
+          }
+
+
+        });
 
       }
 
@@ -213,11 +311,133 @@ define(['jquery', 'd3', 'underscore', '../caleydo_core/ajax', '../pathfinder_ccl
   });
 
 
+  function getInfoDatasets(nodeNames) {
+
+    //console.log("Path Nodes: " + nodeNames);
+
+    var allDatasets = {};
+
+    nodeNames.forEach(function (nodeName, i) {
+      ccle.boxplot_of(nodeName, function (res) {
+        if (typeof res !== "undefined") {
 
 
+          Object.keys(res).forEach(function (dataset) {
+            Object.keys(res[dataset]).forEach(function (group) {
+              allDatasets[dataset] = allDatasets[dataset] || {};
+              allDatasets[dataset][group] = allDatasets[dataset][group] || {};
+              allDatasets[dataset][group][nodeName] = allDatasets[dataset][group][nodeName] || {};
+              allDatasets[dataset][group][nodeName].stats = res[dataset][group].stats;
+              allDatasets[dataset][group][nodeName].data = res[dataset][group].data;
+            })
+          });
+        }
+
+        if (i === nodeNames.length - 1) {
+          dataReady();
+        }
+
+      });
+    });
+
+    function dataReady() {
+      console.log(allDatasets);
+     // logData(dataset,group,node);
+    }
+
+    //
+    //function logData(dataset, group, node) {
+    //  console.log("Dataset: " + dataset + ", Group: " + group + ", Node: " + node + "\nData:" + allDatasets[dataset][group][node].data);
+    //}
+
+    return allDatasets;
+
+  }
+
+  function getNodeNames(data) {
+
+    var nodeNames = [];
+
+    $(data).find('entry').each(function () {
+      var entry = $(this);
+      var type = entry.attr("type");
+      if (type === "gene" || type === "compound") {
+
+        var graphics = entry.find('graphics');
+        var name = getNodeName($(graphics).attr('name'));
+        nodeNames.push(name);
+      }
+    });
+
+    return nodeNames;
+
+  }
+
+  function getNodeInfo(data) {
+
+    var nodes = [];
+    var allNodes = [];
+    var nodeIdList = [];
+
+    $(data).find('entry').each(function () {
+      var entry = $(this);
+      var id = entry.attr("id");
+      var type = entry.attr("type");
+
+      var allnode = {}
+
+      allnode.id = id;
+      allnode.type = type;
+
+      var graphicsNode = entry.find('graphics');
+      allnode.x = $(graphicsNode).attr('x');
+      allnode.y = $(graphicsNode).attr('y');
+      allnode.name = $(graphicsNode).attr('name');
+      allnode.width = $(graphicsNode).attr('width');
+      allnode.height = $(graphicsNode).attr('height');
+
+      //nodeMap[id] = allnode;
+      allNodes.push(allnode);
+
+      //only consider genes and compounds for now
+      if (type === "gene" || type === "compound") {
+
+        var node = {};
+
+        node.id = id;
+        node.type = type;
+
+        nodeIdList.push(node.id);
+        var graphics = entry.find('graphics');
+        node.x = $(graphics).attr('x');
+        node.y = $(graphics).attr('y');
+        node.name = $(graphics).attr('name');
+        node.width = $(graphics).attr('width');
+        node.height = $(graphics).attr('height');
+
+        nodes.push(node);
+
+        if (type === "gene") {
+          var reaction = entry.attr("reaction");
+
+          if (typeof reaction != "undefined" && reaction != null) {
+            var r = reactionMap[reaction];
+            if (typeof r === "undefined") {
+              r = [];
+            }
+            r.push(node);
+            reactionMap[reaction] = r;
+          }
+        }
+      }
+    });
+
+    return nodes;
+
+  }
 
 
-    function render(parent, data) {
+  function render(parent, data) {
 
     var nodes = [];
     var allNodes = [];
@@ -227,6 +447,7 @@ define(['jquery', 'd3', 'underscore', '../caleydo_core/ajax', '../pathfinder_ccl
     var selectedNodes = [];
     var sourceNode = {};
     var targetNode = {};
+    // var nodeNames = [];
 
     $(data).find('entry').each(function () {
       var entry = $(this);
@@ -263,6 +484,8 @@ define(['jquery', 'd3', 'underscore', '../caleydo_core/ajax', '../pathfinder_ccl
         node.width = $(graphics).attr('width');
         node.height = $(graphics).attr('height');
 
+        // var nodeName = getNodeName(node.name);
+        //   nodeNames.push(getNodeName(node.name));
         nodeMap[id] = node;
         nodes.push(node);
 
@@ -282,44 +505,44 @@ define(['jquery', 'd3', 'underscore', '../caleydo_core/ajax', '../pathfinder_ccl
     });
 
     $(data).find('relation').each(function () {
-        var relation = $(this);
-        var relationType = relation.attr("type");
+      var relation = $(this);
+      var relationType = relation.attr("type");
 
-        var sourceNodeId = relation.attr("entry1");
-        var targetNodeId = relation.attr("entry2");
+      var sourceNodeId = relation.attr("entry1");
+      var targetNodeId = relation.attr("entry2");
 
-        var subType = relation.find("subtype");
-        var subTypeName = subType.attr("name");
-        var subTypeValue = subType.attr("value");
+      var subType = relation.find("subtype");
+      var subTypeName = subType.attr("name");
+      var subTypeValue = subType.attr("value");
 
-        var sourceNode = nodeMap[sourceNodeId];
-        var targetNode = nodeMap[targetNodeId];
-        if (typeof sourceNode === "undefined" || typeof targetNode === "undefined") {
-          return;
-        }
+      var sourceNode = nodeMap[sourceNodeId];
+      var targetNode = nodeMap[targetNodeId];
+      if (typeof sourceNode === "undefined" || typeof targetNode === "undefined") {
+        return;
+      }
 
-        if (subTypeName === "compound") {
-          var intermediateNode = nodeMap[subTypeValue];
-          if (typeof intermediateNode != "undefined") {
-            edges.push({
-              source: intermediateNode,
-              target: targetNode,
-              edgeClass: "relation"
-            });
-            edges.push({
-              source: sourceNode,
-              target: intermediateNode,
-              edgeClass: "relation"
-            });
-          }
-        } else {
+      if (subTypeName === "compound") {
+        var intermediateNode = nodeMap[subTypeValue];
+        if (typeof intermediateNode != "undefined") {
           edges.push({
-            source: sourceNode,
+            source: intermediateNode,
             target: targetNode,
             edgeClass: "relation"
           });
+          edges.push({
+            source: sourceNode,
+            target: intermediateNode,
+            edgeClass: "relation"
+          });
         }
-      });
+      } else {
+        edges.push({
+          source: sourceNode,
+          target: targetNode,
+          edgeClass: "relation"
+        });
+      }
+    });
 
     $(data).find('reaction').each(function () {
         var reaction = $(this);
@@ -382,27 +605,26 @@ define(['jquery', 'd3', 'underscore', '../caleydo_core/ajax', '../pathfinder_ccl
     );
 
 
+//   console.log(nodes);
+    /* console.log("This is test");
 
-   console.log(nodes);
-   /* console.log("This is test");
-
-    $.each(allNodes, function(index, val) {
-      console.log(val);
-    }); */
+     $.each(allNodes, function(index, val) {
+     console.log(val);
+     }); */
 
     // Define the div for the tooltip
     var div = d3.select("body").append("div")
       .attr("class", "tooltip")
       .style("opacity", 0);
 
-   var check = parent.selectAll('rect').data(allNodes);
+    var check = parent.selectAll('rect').data(allNodes);
 
     check.enter()
-        .append("rect");
+      .append("rect");
 
     check.attr("x", function (node) {
-      return node.x - node.width / 2;
-    })
+        return node.x - node.width / 2;
+      })
       .attr("y", function (node) {
 
         return node.y - node.height / 2;
@@ -415,15 +637,15 @@ define(['jquery', 'd3', 'underscore', '../caleydo_core/ajax', '../pathfinder_ccl
         return node.height;
       })
       //.attr("stroke","red")
-      .attr("fill","transparent")
-      .attr("id",function(node){
+      .attr("fill", "transparent")
+      .attr("id", function (node) {
         return node.id;
       })
-      .on("mouseover",function(node){
-        var color =  d3.select(this).attr( "style" );
-        if(color == "outline: thick solid green;" || color == "outline: thick solid yellow;" || color == "outline: thick solid red;") {
+      .on("mouseover", function (node) {
+        var color = d3.select(this).attr("style");
+        if (color == "outline: thick solid green;" || color == "outline: thick solid yellow;" || color == "outline: thick solid red;") {
 
-        }else{
+        } else {
           d3.select(this)
             .attr("style", "outline: thick solid orange;")
         }
@@ -435,76 +657,75 @@ define(['jquery', 'd3', 'underscore', '../caleydo_core/ajax', '../pathfinder_ccl
           .style("left", (d3.event.pageX) + "px")
           .style("top", (d3.event.pageY - 28) + "px");
 
-    })
-      .on("mouseout",function(){
-        var color =  d3.select(this).attr( "style" );
-        if(color == "outline: thick solid orange;") {
+      })
+      .on("mouseout", function () {
+        var color = d3.select(this).attr("style");
+        if (color == "outline: thick solid orange;") {
           d3.select(this)
             .attr("style", "outline: none;");
 
           div.transition()
             .duration(500)
             .style("opacity", 0);
-        }else{
+        } else {
           //alert(color);
         }
       })
 
-      .on("click",function(node){
+      .on("click", function (node) {
 
-       // console.log(node);
+        // console.log(node);
 
 
-
-        if($( "#menu a#pathway" ).attr('selected')){
+        if ($("#menu a#pathway").attr('selected')) {
 
           // Create Adjacency Matrix
-          var matrix = createAdjacencyMatrix(nodes,edges);
+          var matrix = createAdjacencyMatrix(nodes, edges);
           //console.log(matrix);
 
           //console.log(NewPath);
-          var color =  d3.select(this).attr( "style" );
-          if(color == "outline: thick solid yellow;") {
+          var color = d3.select(this).attr("style");
+          if (color == "outline: thick solid yellow;") {
             //alert("SourceNode clicked");
-            unselectNodes(parent,'');
+            unselectNodes(parent, '');
             sourceNode = null;
             targetNode = null;
             return;
 
           }
 
-          if(jQuery.isEmptyObject(sourceNode)){
+          if (jQuery.isEmptyObject(sourceNode)) {
             sourceNode = node;
             var SourceNodeTrack = this;
-            unselectNodes(parent,this);
+            unselectNodes(parent, this);
 
-          }else{
+          } else {
 
             targetNode = node;
-            var rectSourceId = "rect[id='"+sourceNode.id+"']";
-            unselectNodes(parent,rectSourceId);
+            var rectSourceId = "rect[id='" + sourceNode.id + "']";
+            unselectNodes(parent, rectSourceId);
 
             var i;
             //CODE FOR SHORTEST PATH ALGORITHM //
-            var path = shortestPathAlgo(matrix,nodes,sourceNode,targetNode);
-            if(path.length > 2){
+            var path = shortestPathAlgo(matrix, nodes, sourceNode, targetNode);
+            if (path.length > 2) {
 
               var edgePoints = [];
               for (i = 0; i < path.length; i += 1) {
 
-                var selectRectId = "rect[id='"+path[i]+"']";
+                var selectRectId = "rect[id='" + path[i] + "']";
 
                 // console.log(selectRectId);
-                if (path[i] != sourceNode.id && path[i] != targetNode.id){
-                  highlightNodes(selectRectId,'pathNode');
+                if (path[i] != sourceNode.id && path[i] != targetNode.id) {
+                  highlightNodes(selectRectId, 'pathNode');
                 }
-                if(path[i] == targetNode.id){
-                  highlightNodes(selectRectId,'targetNode');
+                if (path[i] == targetNode.id) {
+                  highlightNodes(selectRectId, 'targetNode');
                 }
-                if(i!=(path.length-1)){
+                if (i != (path.length - 1)) {
 
-                  var edgesCheck = _.filter( edges, function(item){
-                    if (item.source.id == path[i]  && item.target.id == path[i+1]){
+                  var edgesCheck = _.filter(edges, function (item) {
+                    if (item.source.id == path[i] && item.target.id == path[i + 1]) {
                       return item;
                     }
                   })
@@ -514,19 +735,19 @@ define(['jquery', 'd3', 'underscore', '../caleydo_core/ajax', '../pathfinder_ccl
 
 
               }
-            if(!jQuery.isEmptyObject(edgePoints)){
+              if (!jQuery.isEmptyObject(edgePoints)) {
 
-                 drawConnectingLines(parent,edgePoints);
+                drawConnectingLines(parent, edgePoints);
 
               }
-            }else if(path.length == 2){
+            } else if (path.length == 2) {
 
-             //console.log("only source and target");
+              //console.log("only source and target");
 
               //console.log(path);
               var edgePoints = [];
-              var edgesCheck = _.filter( edges, function(item){
-                if (item.source.id == path[0]  && item.target.id == path[1]){
+              var edgesCheck = _.filter(edges, function (item) {
+                if (item.source.id == path[0] && item.target.id == path[1]) {
                   return item;
                 }
               })
@@ -534,29 +755,29 @@ define(['jquery', 'd3', 'underscore', '../caleydo_core/ajax', '../pathfinder_ccl
 
               //console.log(edgesCheck);
 
-              if(!jQuery.isEmptyObject(edgesCheck)) {
+              if (!jQuery.isEmptyObject(edgesCheck)) {
 
-                for(i = 0; i < path.length; i += 1){
+                for (i = 0; i < path.length; i += 1) {
 
-                  var selectRectId = "rect[id='"+path[i]+"']";
+                  var selectRectId = "rect[id='" + path[i] + "']";
                   edgesCheck[0].width = d3.select(selectRectId).attr("width");
                   edgePoints.push(edgesCheck[0]);
                 }
 
-                if(!jQuery.isEmptyObject(edgePoints)){
-                  drawConnectingLines(parent,edgePoints);
+                if (!jQuery.isEmptyObject(edgePoints)) {
+                  drawConnectingLines(parent, edgePoints);
                 }
                 // console.log(path);
-                var selectRectId = "rect[id='"+path[1]+"']";
-                highlightNodes(selectRectId,'targetNode');
+                var selectRectId = "rect[id='" + path[1] + "']";
+                highlightNodes(selectRectId, 'targetNode');
 
-              }else{
+              } else {
 
                 // If no path is found, deselect source and target
-                for(i = 0; i < path.length; i += 1){
+                for (i = 0; i < path.length; i += 1) {
 
-                  var selectRectId = "rect[id='"+path[i]+"']";
-                  highlightNodes(selectRectId,'none');
+                  var selectRectId = "rect[id='" + path[i] + "']";
+                  highlightNodes(selectRectId, 'none');
 
                 }
                 sourceNode = null;
@@ -564,9 +785,9 @@ define(['jquery', 'd3', 'underscore', '../caleydo_core/ajax', '../pathfinder_ccl
 
               }
             }
-            else{
-              if (path[0] == sourceNode.id){
-                unselectNodes(parent,'');
+            else {
+              if (path[0] == sourceNode.id) {
+                unselectNodes(parent, '');
               }
             }
 
@@ -574,223 +795,223 @@ define(['jquery', 'd3', 'underscore', '../caleydo_core/ajax', '../pathfinder_ccl
             targetNode = null;
 
 
-          // CODE FOR ORIGINAL NODE SELECTION ONE BY ONE //
-          /* var a = _.filter( edges, function(item){
-              if (item.source.id == sourceNode.id  && item.target.id == targetNode.id){
-                return item;
-              }
-            })
+            // CODE FOR ORIGINAL NODE SELECTION ONE BY ONE //
+            /* var a = _.filter( edges, function(item){
+             if (item.source.id == sourceNode.id  && item.target.id == targetNode.id){
+             return item;
+             }
+             })
 
-            if(typeof a != "undefined" && a != null && a.length > 0){
-              d3.select(this)
-                .attr("style", "outline: thick solid green;");
-              selectedNodes.push(node);
-              sourceNode = targetNode;
-            }else{
+             if(typeof a != "undefined" && a != null && a.length > 0){
+             d3.select(this)
+             .attr("style", "outline: thick solid green;");
+             selectedNodes.push(node);
+             sourceNode = targetNode;
+             }else{
 
-              var unselect = parent.selectAll("rect")
+             var unselect = parent.selectAll("rect")
 
-              unselect
-                .attr("style","outline: none");
+             unselect
+             .attr("style","outline: none");
 
-              //  unselect.exit().remove();
-              sourceNode = null;
-              targetNode = null;
-              //alert("dont work!remove from selected!");
-            }*/
+             //  unselect.exit().remove();
+             sourceNode = null;
+             targetNode = null;
+             //alert("dont work!remove from selected!");
+             }*/
 
 
           }
-        }else{
-          unselectNodes(parent,'');
+        } else {
+          unselectNodes(parent, '');
           sourceNode = null;
           targetNode = null;
         }
 
+
       })
 
-// Deselecting all selected nodes by double-clicking on any one of the selected nodes.
-      .on("dblclick", function(){
-      var color =  d3.select(this).attr( "style" );
-              if(color == "outline: thick solid green;") {
-                d3.selectAll("rect")
-                  .attr("style", "outline: none;");
-                //d3.event.stopPropagation();
-              }})
+      // Deselecting all selected nodes by double-clicking on any one of the selected nodes.
+      .on("dblclick", function () {
+        var color = d3.select(this).attr("style");
+        if (color == "outline: thick solid green;") {
+          d3.selectAll("rect")
+            .attr("style", "outline: none;");
+          //d3.event.stopPropagation();
+        }
+      })
 
 
 // Removed all the red rect and blue lines --------------------
- /*removeRed()
-    {
-      rect.on("click", function() {
-          console.log("rect");
-          d3.event.stopPropagation();
-        });
+    /*removeRed()
+     {
+     rect.on("click", function() {
+     console.log("rect");
+     d3.event.stopPropagation();
+     });
      }*/
 //---------------------------------------------------------
     check.exit().remove();
 
 // Debug_Mode toggle to show and hide red boxes representing connected nodes:
 
- $( "#menuB a" ).bind( "click", function() {
-    //alert($(this.attr("id")));
-    var id = $(this).attr("id");
+    $("#menuB a").bind("click", function () {
+      //alert($(this.attr("id")));
+      var id = $(this).attr("id");
 
-    if($(this).attr("selected")) {
-      $(this).attr("selected", false);
-      $(this).attr("style","background-color: #030101;");
+      if ($(this).attr("selected")) {
+        $(this).attr("selected", false);
+        $(this).attr("style", "background-color: #030101;");
 
-     if(id === "debug_mode"){ //If already in debug mode, hide the boxes on click
-      var tt = parent.selectAll("rect").data(nodes);
-         tt.enter()
-           .append("rect")
-           .append("svg:title")
-
-
-         tt.attr("x", function (node) {
-           return node.x - node.width / 2;
-         })
-           .attr("y", function (node) {
-
-             return node.y - node.height / 2;
-           })
-           .attr("width", function (node) {
-
-             return node.width;
-           })
-           .attr("height", function (node) {
-             return node.height;
-           })
-
-           .attr("fill", "none")
+        if (id === "debug_mode") { //If already in debug mode, hide the boxes on click
+          var tt = parent.selectAll("rect").data(nodes);
+          tt.enter()
+            .append("rect")
+            .append("svg:title")
 
 
-           .on("mouseover",function(node){
-             var color =  d3.select(this).attr( "style" );
-             if(color == "outline: thick solid green;") {
+          tt.attr("x", function (node) {
+              return node.x - node.width / 2;
+            })
+            .attr("y", function (node) {
 
-             }else{
-               d3.select(this)
-                 .attr("style", "outline: thick solid orange;")
-             }
-             div.transition()
-               .duration(200)
-               .style("opacity", .9);
+              return node.y - node.height / 2;
+            })
+            .attr("width", function (node) {
 
-             div.html(node.name)
-               .style("left", (d3.event.pageX) + "px")
-               .style("top", (d3.event.pageY - 28) + "px");
+              return node.width;
+            })
+            .attr("height", function (node) {
+              return node.height;
+            })
 
-           })
-           .on("mouseout",function(){
-             var color =  d3.select(this).attr( "style" );
-             if(color == "outline: thick solid orange;") {
-               d3.select(this)
-                 .attr("style", "outline: none;");
+            .attr("fill", "none")
 
-               div.transition()
-                 .duration(500)
-                 .style("opacity", 0);
-             }
-           })
+
+            .on("mouseover", function (node) {
+              var color = d3.select(this).attr("style");
+              if (color == "outline: thick solid green;") {
+
+              } else {
+                d3.select(this)
+                  .attr("style", "outline: thick solid orange;")
+              }
+              div.transition()
+                .duration(200)
+                .style("opacity", .9);
+
+              div.html(node.name)
+                .style("left", (d3.event.pageX) + "px")
+                .style("top", (d3.event.pageY - 28) + "px");
+
+            })
+            .on("mouseout", function () {
+              var color = d3.select(this).attr("style");
+              if (color == "outline: thick solid orange;") {
+                d3.select(this)
+                  .attr("style", "outline: none;");
+
+                div.transition()
+                  .duration(500)
+                  .style("opacity", 0);
+              }
+            })
 
           // Removing blue lines that denote the available edges:
 
           var tt = parent.selectAll("line").data(edges);
 
-              tt.enter()
-                .append("line");
+          tt.enter()
+            .append("line");
 
-              tt.attr("x1", function (edge) {
-                return edge.source.x;
-              })
-                .attr("y1", function (edge) {
+          tt.attr("x1", function (edge) {
+              return edge.source.x;
+            })
+            .attr("y1", function (edge) {
 
-                  return edge.source.y;
-                })
-                .attr("x2", function (edge) {
-                  return edge.target.x;
-                })
-                .attr("y2", function (edge) {
-                  return edge.target.y;
-                })
-                .attr("stroke","none"
-                          );
+              return edge.source.y;
+            })
+            .attr("x2", function (edge) {
+              return edge.target.x;
+            })
+            .attr("y2", function (edge) {
+              return edge.target.y;
+            })
+            .attr("stroke", "none"
+            );
 
 
         }
 
 
+      } else { // If not in debug mode, go into the mode by showing the boxes
+        $(this).attr("selected", "selected");
+        $(this).attr("style", "background-color: #3091ff;");
+
+        //alert("hiMenu")
+        var tt = parent.selectAll("rect").data(nodes);
+        //var menuId = "debug_mode"
+        tt.enter()
+          .append("rect")
+          .append("svg:title")
+
+        tt.attr("x", function (node) {
+            return node.x - node.width / 2;
+          })
+          .attr("y", function (node) {
+
+            return node.y - node.height / 2;
+          })
+          .attr("width", function (node) {
+
+            return node.width;
+          })
+          .attr("height", function (node) {
+            return node.height;
+          })
+
+          .attr("fill", "rgb(255,0,0")
 
 
-    } else { // If not in debug mode, go into the mode by showing the boxes
-      $(this).attr("selected", "selected");
-      $(this).attr("style","background-color: #3091ff;");
+          .on("mouseover", function (node) {
+            var color = d3.select(this).attr("style");
+            if (color == "outline: thick solid green;") {
 
-              //alert("hiMenu")
-               var tt = parent.selectAll("rect").data(nodes);
-                   //var menuId = "debug_mode"
-                  tt.enter()
-                    .append("rect")
-                    .append("svg:title")
+            } else {
+              d3.select(this)
+                .attr("style", "outline: thick solid orange;")
+            }
+            div.transition()
+              .duration(200)
+              .style("opacity", .9);
 
-                  tt.attr("x", function (node) {
-                    return node.x - node.width / 2;
-                  })
-                    .attr("y", function (node) {
+            div.html(node.name)
+              .style("left", (d3.event.pageX) + "px")
+              .style("top", (d3.event.pageY - 28) + "px");
 
-                      return node.y - node.height / 2;
-                    })
-                    .attr("width", function (node) {
+          })
+          .on("mouseout", function () {
+            var color = d3.select(this).attr("style");
+            if (color == "outline: thick solid orange;") {
+              d3.select(this)
+                .attr("style", "outline: none;");
 
-                      return node.width;
-                    })
-                    .attr("height", function (node) {
-                      return node.height;
-                    })
+              div.transition()
+                .duration(500)
+                .style("opacity", 0);
+            } else {
 
-                    .attr("fill", "rgb(255,0,0")
-
-
-                    .on("mouseover",function(node){
-                      var color =  d3.select(this).attr( "style" );
-                      if(color == "outline: thick solid green;") {
-
-                      }else{
-                        d3.select(this)
-                          .attr("style", "outline: thick solid orange;")
-                      }
-                      div.transition()
-                        .duration(200)
-                        .style("opacity", .9);
-
-                      div.html(node.name)
-                        .style("left", (d3.event.pageX) + "px")
-                        .style("top", (d3.event.pageY - 28) + "px");
-
-                    })
-                    .on("mouseout",function(){
-                      var color =  d3.select(this).attr( "style" );
-                      if(color == "outline: thick solid orange;") {
-                        d3.select(this)
-                          .attr("style", "outline: none;");
-
-                        div.transition()
-                          .duration(500)
-                          .style("opacity", 0);
-                      }else{
-
-                      }
-                    })
-    // In debug mode, the lines show:
-    var tt = parent.selectAll("line").data(edges);
+            }
+          })
+        // In debug mode, the lines show:
+        var tt = parent.selectAll("line").data(edges);
 
         tt.enter()
           .append("line");
 
         tt.attr("x1", function (edge) {
-          return edge.source.x;
-        })
+            return edge.source.x;
+          })
           .attr("y1", function (edge) {
 
             return edge.source.y;
@@ -801,18 +1022,18 @@ define(['jquery', 'd3', 'underscore', '../caleydo_core/ajax', '../pathfinder_ccl
           .attr("y2", function (edge) {
             return edge.target.y;
           })
-          .attr("stroke", function(edge) {
+          .attr("stroke", function (edge) {
             return edge.edgeClass === "relation" ? "rgb(0,0,255)" : "rgb(0,255,0)";
           });
-          //.attr("stroke-dasharray", function(edge) {
-          //  return edge.edgeClass === "relation" ? "0,0" : "1,20";
-          //});
+        //.attr("stroke-dasharray", function(edge) {
+        //  return edge.edgeClass === "relation" ? "0,0" : "1,20";
+        //});
         tt.exit().remove();
 
-    }
+      }
 
 
-  });
+    });
 
 
     //var entries = $(data).find('entry');
@@ -853,10 +1074,13 @@ define(['jquery', 'd3', 'underscore', '../caleydo_core/ajax', '../pathfinder_ccl
   }
 
 
+  // Function to get the First name in a string of gene names
+  function getNodeName(name) {
+    return name.split(",")[0];
+  }
 
 
-
-  function createAdjacencyMatrix(nodes,edges) {
+  function createAdjacencyMatrix(nodes, edges) {
 
     var edgeHash = {};
     var MaxValue = 1000;
@@ -882,17 +1106,17 @@ define(['jquery', 'd3', 'underscore', '../caleydo_core/ajax', '../pathfinder_ccl
   }
 
 
-  function shortestPathAlgo(matrix,nodes,sourceNode,targetNode){
+  function shortestPathAlgo(matrix, nodes, sourceNode, targetNode) {
 
 
     var distance = [];
     var previous = [];
-    var Q=[] //LIST OF ALL VERTICES//
-    var  i;
+    var Q = [] //LIST OF ALL VERTICES//
+    var i;
 
     //console.log(Q);
-    console.log("SourceNode--->",sourceNode);
-    console.log("TargetNode--->",targetNode);
+    console.log("SourceNode--->", sourceNode);
+    console.log("TargetNode--->", targetNode);
 
 
     // INITIALIZATION STEP : ALL NODES AS INFINITY //
@@ -911,9 +1135,9 @@ define(['jquery', 'd3', 'underscore', '../caleydo_core/ajax', '../pathfinder_ccl
 
     }
 
-     // INITIALIZATION STEP : SOURCE NODE AS 0 //
-     _.filter( distance, function(item){
-      if (item.id == sourceNode.id){
+    // INITIALIZATION STEP : SOURCE NODE AS 0 //
+    _.filter(distance, function (item) {
+      if (item.id == sourceNode.id) {
         item.value = 0;
       }
     })
@@ -923,7 +1147,7 @@ define(['jquery', 'd3', 'underscore', '../caleydo_core/ajax', '../pathfinder_ccl
     var S = []; // LIST OF VISITED VERTICES //
 
     //console.log("iterations",Q.length);
-    while(!jQuery.isEmptyObject(Q)){
+    while (!jQuery.isEmptyObject(Q)) {
 
 
       var min = Infinity;
@@ -935,90 +1159,95 @@ define(['jquery', 'd3', 'underscore', '../caleydo_core/ajax', '../pathfinder_ccl
       //console.log("S-->",S);
       for (i = 0; i < Q.length; i += 1) {
 
-        var minDist = distance.filter(function(a){ return a.id == Q[i] })[0];
+        var minDist = distance.filter(function (a) {
+          return a.id == Q[i]
+        })[0];
         var weightValue = minDist.value;
 
-        if(weightValue < min){
+        if (weightValue < min) {
           min = weightValue;
           pos = Q[i];
         }
       }
 
       // console.log(min,'--',pos);
-      var index = $.inArray(pos,Q);
+      var index = $.inArray(pos, Q);
 
       Q.splice(index, 1);
       S.push(pos);
 
-     // NEIGHBOUR FINDING STEP //
+      // NEIGHBOUR FINDING STEP //
 
-     var v = _.filter( matrix, function(item){
-      if (item.source == pos){
-        return item.target;
+      var v = _.filter(matrix, function (item) {
+        if (item.source == pos) {
+          return item.target;
         }
       })
 
       // TERMINATE IF TARGET NODE REACHED //
-      var currentDist = distance.filter(function(a){ return a.id == pos })[0];
+      var currentDist = distance.filter(function (a) {
+        return a.id == pos
+      })[0];
       if (currentDist.value == Infinity || pos == targetNode.id) {
-          //console.log("stop!!");
-         // previous.push(targetNode.id);
-          break;
+        //console.log("stop!!");
+        // previous.push(targetNode.id);
+        break;
       }
 
-    //console.log(v);
+      //console.log(v);
 
-     for (i = 0; i < v.length; i += 1) {
+      for (i = 0; i < v.length; i += 1) {
 
-      var neighbourId =  v[i].target;
-      //console.log("NEXT NEIGHBOUR ID",neighbourId);
-      var matrixId = pos+'-'+neighbourId;
-      //console.log(matrixId);
-      var current = _.filter( matrix, function(item){
-        if (item.id == matrixId){
-          return item;
+        var neighbourId = v[i].target;
+        //console.log("NEXT NEIGHBOUR ID",neighbourId);
+        var matrixId = pos + '-' + neighbourId;
+        //console.log(matrixId);
+        var current = _.filter(matrix, function (item) {
+          if (item.id == matrixId) {
+            return item;
+          }
+        })
+        // console.log(current[0].weight);
+        // console.log("next");
+        var alt = currentDist.value + current[0].weight;
+        var neighbourDist = distance.filter(function (a) {
+          return a.id == neighbourId
+        })[0];
+
+        //console.log(alt,'+',neighbourDist.value);
+        if (alt < neighbourDist.value) {
+
+          _.filter(distance, function (item) {
+            if (item.id == neighbourId) {
+              item.value = alt;
+            }
+          })
+
+          _.filter(previous, function (item) {
+            if (item.id == neighbourId) {
+              item.value = pos;
+            }
+          })
+
+          // previous[neighbourId] = pos
         }
-      })
-     // console.log(current[0].weight);
-     // console.log("next");
-       var alt = currentDist.value+ current[0].weight;
-       var neighbourDist = distance.filter(function(a){ return a.id == neighbourId })[0];
 
-       //console.log(alt,'+',neighbourDist.value);
-      if(alt < neighbourDist.value){
-
-        _.filter( distance, function(item){
-          if (item.id == neighbourId){
-            item.value = alt;
-          }
-        })
-
-        _.filter( previous, function(item){
-          if (item.id == neighbourId){
-            item.value = pos;
-          }
-        })
-
-       // previous[neighbourId] = pos
       }
-
-     }
-   }
-
+    }
 
 
     var path = [];
     pos = targetNode.id;
-   //
+    //
     //console.log("CHERE??");
     // console.log(previous);
 
     path.push(pos);
-    while(pos!=sourceNode.id){
+    while (pos != sourceNode.id) {
 
       // console.log("pos",pos);
-      var prevNode = _.filter( previous, function(item){
-        if (item.id == pos){
+      var prevNode = _.filter(previous, function (item) {
+        if (item.id == pos) {
           return item;
         }
       });
@@ -1027,36 +1256,34 @@ define(['jquery', 'd3', 'underscore', '../caleydo_core/ajax', '../pathfinder_ccl
       path.push(pos);
     }
 
-   // console.log(path);
+    // console.log(path);
 
 
     return path.reverse();
 
 
-
-
   }
 
-  function unselectNodes(parent,selectedNode){
+  function unselectNodes(parent, selectedNode) {
 
     var unselectRect = parent.selectAll("rect");
 
     var unselectLines = parent.selectAll("line");
 
-    unselectRect.attr("style","outline: none");
+    unselectRect.attr("style", "outline: none");
 
-    unselectLines.attr("stroke","transparent");
+    unselectLines.attr("stroke", "transparent");
     //unselectLines.attr("stroke-width","0");
 
 
-    if(!jQuery.isEmptyObject(selectedNode)){
-      highlightNodes(selectedNode,'sourceNode');
+    if (!jQuery.isEmptyObject(selectedNode)) {
+      highlightNodes(selectedNode, 'sourceNode');
     }
 
 
   }
 
-  function drawConnectingLines(parent,edgePoints){
+  function drawConnectingLines(parent, edgePoints) {
 
     //console.log("entering here???");
     var tt = parent.selectAll("line").data(edgePoints);
@@ -1065,39 +1292,40 @@ define(['jquery', 'd3', 'underscore', '../caleydo_core/ajax', '../pathfinder_ccl
       .append("line");
 
     tt.attr("x1", function (edge) {
-      return parseInt(edge.source.x) + parseInt(edge.width/2);
-    })
+        return parseInt(edge.source.x) + parseInt(edge.width / 2);
+      })
       .attr("y1", function (edge) {
 
         return edge.source.y;
       })
       .attr("x2", function (edge) {
-        return parseInt(edge.target.x) - parseInt(edge.width/2);
+        return parseInt(edge.target.x) - parseInt(edge.width / 2);
       })
       .attr("y2", function (edge) {
         return edge.target.y;
       })
-      .attr("stroke","green")
-      .attr("stroke-width","5");
+      .attr("stroke", "green")
+      .attr("stroke-width", "5");
 
   }
 
 
-  function highlightNodes(nodeH,nodeType){
+  function highlightNodes(nodeH, nodeType) {
 
     var color = 'none';
-    if (nodeType == 'sourceNode'){
+    if (nodeType == 'sourceNode') {
       color = 'yellow';
-    }else if(nodeType == 'pathNode'){
+    } else if (nodeType == 'pathNode') {
       color = 'green';
-    }else if(nodeType == 'targetNode'){
+    } else if (nodeType == 'targetNode') {
       color = 'red';
     }
 
-    var prop = "outline: thick solid "+color+";";
+    var prop = "outline: thick solid " + color + ";";
     d3.select(nodeH)
-      .attr("style",prop);
+      .attr("style", prop);
   }
+
 //var o = {
 //  width: 500,
 //  height: 100,
