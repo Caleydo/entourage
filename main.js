@@ -53,10 +53,16 @@ define(['jquery', 'd3', 'underscore', '../caleydo_core/ajax', '../pathfinder_ccl
 
 
 
-  var a;
+  var a,c,e;
   var b = 50;
-  var addText;
-  var textElements;
+  var d = 50;
+  var f = 70;
+  var temp = b;
+  var tempF = 70;
+  var array = [];
+  var count = 0;
+  var id = 100;
+  var idText = 1000;
 
   $(document).ready(function () {
     //$.get("/api/pathway", function (resp) {
@@ -109,8 +115,9 @@ define(['jquery', 'd3', 'underscore', '../caleydo_core/ajax', '../pathfinder_ccl
             var width = this.width;
             var height = this.height;
             a = width;
-
-            svg.attr("width", width+300)
+            c = width;
+            e = width;
+            svg.attr("width", width+400)
               .attr("height", height);
 
 
@@ -629,7 +636,11 @@ define(['jquery', 'd3', 'underscore', '../caleydo_core/ajax', '../pathfinder_ccl
     var check = parent.selectAll('rect').data(allNodes);
 
     check.enter()
-      .append("rect");
+      .append("rect").text(function(node){
+      var text = node.name;
+      var name = String(text);
+      var nodeName = name.split(",");
+      return nodeName[0]; });
 
     check.attr("x", function (node) {
         return node.x - node.width / 2;
@@ -647,6 +658,11 @@ define(['jquery', 'd3', 'underscore', '../caleydo_core/ajax', '../pathfinder_ccl
       })
       //.attr("stroke","red")
       .attr("fill", "transparent")
+      .attr("name",function(node){
+      var text = node.name;
+       var name = String(text);
+       var nodeName = name.split(",");
+       return nodeName[0];})
       .attr("id", function (node) {
         return node.id;
       })
@@ -682,15 +698,7 @@ define(['jquery', 'd3', 'underscore', '../caleydo_core/ajax', '../pathfinder_ccl
       })
       .on("click",function(node){
 
-       // console.log(node);
-        var text = node.name;
-        var name = String(text);
-        var nodeName = name.split(",");
-        alert(nodeName[0]);
-
         if($( "#menu a#pathway" ).attr('selected')|| $("#menu a#enroute").attr('selected')){
-
-
           // Create Adjacency Matrix
           var matrix = createAdjacencyMatrix(nodes, edges);
           //console.log(matrix);
@@ -708,11 +716,6 @@ define(['jquery', 'd3', 'underscore', '../caleydo_core/ajax', '../pathfinder_ccl
 
           if (jQuery.isEmptyObject(sourceNode)) {
             sourceNode = node;
-
-            text = node.name;
-            name = String(text);
-            nodeName = name.split(",");
-            g.append("text").text(nodeName[0]);
             var SourceNodeTrack = this;
             unselectNodes(parent, this);
 
@@ -720,16 +723,16 @@ define(['jquery', 'd3', 'underscore', '../caleydo_core/ajax', '../pathfinder_ccl
 
             targetNode = node;
 
-            //var rectSourceId = "rect[id='" + sourceNode.id + "']";
-            //unselectNodes(parent, rectSourceId);
-
+            var rectSourceId = "rect[id='" + sourceNode.id + "']";
+            unselectNodes(parent, rectSourceId);
+/*
             text = node.name;
             name = String(text);
             nodeName = name.split(",");
             var rectSourceId = "rect[id='"+sourceNode.id+"']";
             unselectNodes(parent,rectSourceId);
 
-
+*/
             var i;
             //CODE FOR SHORTEST PATH ALGORITHM //
             var path = shortestPathAlgo(matrix, nodes, sourceNode, targetNode);
@@ -1291,6 +1294,9 @@ define(['jquery', 'd3', 'underscore', '../caleydo_core/ajax', '../pathfinder_ccl
 
   function unselectNodes(parent, selectedNode) {
 
+    var id = selectedNode.id;
+    var nodeClickedName = $("rect[id='"+id+"']").attr("name");
+
     var unselectRect = parent.selectAll("rect");
 
     var unselectLines = parent.selectAll("line");
@@ -1300,28 +1306,24 @@ define(['jquery', 'd3', 'underscore', '../caleydo_core/ajax', '../pathfinder_ccl
     unselectLines.attr("stroke", "transparent");
     //unselectLines.attr("stroke-width","0");
 
-
-
-
-    //if (!jQuery.isEmptyObject(selectedNode)) {
-    //  highlightNodes(selectedNode, 'sourceNode');
-
     if(!jQuery.isEmptyObject(selectedNode)){
-     if($( "#menu a#enroute" ).attr('selected')){
-          d3.select(selectedNode)
-            .attr("style", "outline: thick solid green;")
-            .attr("x", a+100).attr("y",b).attr("width",70).attr("height", 20);
-           //d3.append("text").attr("x", a+100).text(nodeText);
-           //alert(newText);
-          b = b+50;
+     if($( "#menu a#enroute" ).attr('selected'))
+     {
+           highlightNodes(selectedNode,'sourceNode');
+          // drawRectEnroute(nodeClickedName);
+          // putTextEnroute(nodeClickedName);
+         /* for(int i = 0; i<array.length;i++)
+                {
+                  //d3.select("#array[i]").remove();
+                }*/
+     }
+      else
+      {
+       highlightNodes(selectedNode,'sourceNode');
 
+      }
 
-          }
-          else{
-                highlightNodes(selectedNode,'sourceNode');
-
-          }
-    }
+     }
 
 
   }
@@ -1355,6 +1357,7 @@ define(['jquery', 'd3', 'underscore', '../caleydo_core/ajax', '../pathfinder_ccl
 
   function highlightNodes(nodeH, nodeType) {
 
+    var nodeClickedName = $(nodeH).attr("name");
     var color = 'none';
     if (nodeType == 'sourceNode') {
       color = 'yellow';
@@ -1363,29 +1366,119 @@ define(['jquery', 'd3', 'underscore', '../caleydo_core/ajax', '../pathfinder_ccl
     } else if (nodeType == 'targetNode') {
       color = 'red';
     }
-    if($( "#menu a#enroute" ).attr('selected')){
-              d3.select(selectedNode)
-                .attr("style", "outline: thick solid green;")
-                .attr("x", a+100).attr("y",b).attr("width",70).attr("height", 20);
-               //d3.append("text").attr("x", a+100).text(nodeText);
-               //alert(newText);
-              b = b+50;
+    if($( "#menu a#enroute" ).attr('selected'))
+        {
+          var prop = "outline: thick solid "+color+";";
+          d3.select(nodeH)
+            .attr("style",prop);
 
 
-              }
-              else{
-                   var prop = "outline: thick solid "+color+";";
-                       d3.select(nodeH)
-                         .attr("style",prop);
+          count++;
+          if(nodeType == 'sourceNode')
+          {
+          b = temp;
+          d = temp;
+          f = tempF;
 
-              }
 
+          }
 
-    var prop = "outline: thick solid " + color + ";";
-    d3.select(nodeH)
-      .attr("style", prop);
+          drawRectEnroute(nodeClickedName);
+          putTextEnroute(nodeClickedName);
+          if(nodeType != 'targetNode')
+          {
+            drawPathLinesEnroute();
+          }
+        }
+        else
+        {
+             var prop = "outline: thick solid "+color+";";
+                 d3.select(nodeH)
+                   .attr("style",prop);
+
+        }
 
   }
+
+function drawRectEnroute(nodeClickedName)
+{
+  //alert(id);
+  d3.select("g").append('rect').transition().attr("fill","none").attr('stroke','black').attr("stroke-width","2.5").attr('id',id)
+    .attr("x", a+40).attr("y",b).attr("width",70).attr("height", 20).attr("name",nodeClickedName)
+    /*.on('mouseover'function(){
+        d3.select(this)
+              .attr("style", "outline: thick solid orange;");
+    })*/;
+  b = b + 80;
+  id = id + 1;
+
+}
+
+function putTextEnroute(nodeClickedName)
+{
+    d3.select("g").append('text').text(nodeClickedName).attr('x',c+49).attr('id',idText)
+      .attr('y', d+14).attr('fill','black')
+      .attr("font-family", "Times New Roman")
+      .attr("font-size", "13px");
+    d = d + 80;
+    array.push(idText);
+    idText = idText + 1;
+
+}
+
+function drawPathLinesEnroute()
+{
+  d3.select("g").append('line').attr('x1', e+75).attr('y1',f)
+    .attr('x2', e+75).attr('y2',f+60)
+    .attr("stroke","#ff884d").attr("stroke-width","2.5");
+  f = f +80;
+}
+
+// ONLY COMMENTS AFTER THIS POINT --- IGNORE FOR NOW ---
+
+//function displayText(parent,allNodes)
+//{
+////alert(nodeA.name);
+///*d3.select("body").selectAll("text")
+//    .data(nodeA)
+//    .enter()
+//    .append("text")
+//    .text(function(nodeA){
+//                        var text = nodeA.name;
+//                        var name = String(text);
+//                        var nodeName = name.split(",");
+//                        return nodeName[0];
+//                        }).attr('x',a+45)
+//                                   .attr('y', b+13)
+//                                   .attr('fill','black')
+//                                   .attr("font-family", "sans-serif")
+//                                   .attr("font-size", "13px");*/
+//var checktext = parent.selectAll('rect').data(allNodes);
+//   checktext.enter().append('text')
+//            .text(function(node){
+//              var text = node.name;
+//              //alert(text);
+//              var name = String(text);
+//              var nodeName = name.split(",");
+//              return nodeName[0];
+//              });
+//   checktext.attr("x", function (node) {
+//         var x = node.x - node.width / 2;
+//         x = x + 7;
+//         return x;
+//       } )
+//         .attr("y", function (node) {
+//            var y = node.y - node.height / 2;
+//            y = y+13;
+//           return y;
+//         });
+//
+//         /*checktext.attr('x',a+45)
+//         .attr('y', b+13)*/
+//         checktext.attr('fill','transparent')
+//         .attr("font-family", "sans-serif")
+//         .attr("font-size", "13px");
+//}
 
 //var o = {
 //  width: 500,
@@ -1523,6 +1616,6 @@ define(['jquery', 'd3', 'underscore', '../caleydo_core/ajax', '../pathfinder_ccl
 //  //  n.selectedIndex = 0;
 //  //});
 //});
-
+// ----------------------------COMMENTS END HERE-------------------------------
 
 });
