@@ -63,17 +63,23 @@ define(['jquery', 'd3', 'underscore', '../caleydo_core/ajax', '../pathfinder_ccl
   var count = 0;
   var id = 100;
   var idText = 1000;
+  var nodeGroup;
+
+  var menuChosen;
+  var nodeInfo = [];
+  var nodeNames = [];
+  var allDatasets = {};
+  var groupFlag = false;
+  var groupList = [];
+  var stdDevList = [];
+
 
   $(document).ready(function () {
     //$.get("/api/pathway", function (resp) {
     // $('<h1>'+resp+'</h1>').appendTo('body');
     //});
 
-    var nodeGroup;
 
-    var nodeInfo = [];
-    var nodeNames = [];
-    var allDatasets = {};
 
     var NewPath;
     var rightNodeGroup;
@@ -166,11 +172,12 @@ define(['jquery', 'd3', 'underscore', '../caleydo_core/ajax', '../pathfinder_ccl
 
       });
 
-    $("#menu a").bind("click", function () {
+    $('#menu').on("click", "li a", function() {
+
       //alert($(this.attr("id")));
       var id = $(this).attr("id");
 
-      // alert(id);
+     // alert(id);
 
 
       if ($(this).attr("selected")) {
@@ -185,9 +192,9 @@ define(['jquery', 'd3', 'underscore', '../caleydo_core/ajax', '../pathfinder_ccl
         }
 
         if(id === "enroute"){
-                var unselect = d3.select("body").selectAll("rect")
-                unselect.attr("style","outline:none");
-                }
+          var unselect = d3.select("body").selectAll("rect");
+          unselect.attr("style","outline:none");
+        }
       } else {
         $(this).attr("selected", "selected");
         $(this).attr("style", "background-color: #3091ff;");
@@ -197,71 +204,178 @@ define(['jquery', 'd3', 'underscore', '../caleydo_core/ajax', '../pathfinder_ccl
 
       if (id === 'mrnaexpression' || id === 'copynumbervariation') {
 
-        var dataset = Object.keys(allDatasets);
-        var color;
-        var datasetName;
+        // To check if the dataset is ready or not.If not no mapping is done
+        if(jQuery.isEmptyObject(allDatasets)){
 
-        if (id === 'mrnaexpression') {
-          color = "purple"
-          datasetName = "mRNA Expression";
+          alert("DataSet is loading, please wait!");
+
+          $(this).removeAttr('selected');
+          $(this).attr("style", "background-color: none;");
+
+          return;
+
         }
-        if (id === 'copynumbervariation') {
-          color = "green";
-          datasetName = "Copy Number Expression";
+
+        //console.log("test??");
+        if ($(this).attr("selected")) {
+
+
+
+          if(!groupFlag){
+
+            $('#menu ul li:last').after('<li><a href="#" id="group"> Grouping </a></li>');
+            groupFlag = true;
+
+          }
+          menuChosen = id;
+          drawmappings(id,'all');
+        }else{
+
+
+          $('#menu ul li:last').remove();
+          $("#showGrouping").remove();
+          groupFlag = false;
+          unmap();
         }
 
-        $('#dataset').html(datasetName);
-
-        ccle.rows(id).then(function (data) {
-          $('#genes').html(data.length);
-        });
-
-        ccle.cols(id).then(function (data) {
-          $('#celLines').html(data.length);
-        });
-
-        ccle.stats(id).then(function (data) {
-          $('#mean').html(data.mean);
-          $('#std').html(data.std);
-          $('#max').html(data.max);
-          $('#min').html(data.min);
-        });
 
 
-        var group = Object.keys(allDatasets[id]);
+      }
 
-        var color = d3.scale.linear()
-          .domain([-10, 0, 10])
-          .range(["blue", "white", "red"]);
+      if(id === "group"){
+        if ($(this).attr("selected")) {
 
-
-        var rectBar = d3.select("#leftContainer");
-
-        var nodeInData = allDatasets[id][group[0]];
-
-        var nodeSet = Object.keys(nodeInData);
-
-        nodeNames.forEach(function (d, i) {
-
-
-          var node = nodeNames[i];
-       //   console.log(node);
-          //console.log(nodeInfo[i]);
-          var nodeId = nodeInfo[i].id;
-          var nodeN = nodeInfo[i].name;
-          var nodeX = nodeInfo[i].x;
-          var nodeY = nodeInfo[i].y;
-          var nodeH = nodeInfo[i].height;
-          var nodeW = nodeInfo[i].width;
-          var nodeAvg = 0;
-          var varianceAvg = 0;
+          $('#showGrouping').append('<input type="checkbox" id="none">none<br />');
+          var group = Object.keys(allDatasets[menuChosen]);
+          group.forEach(function (d) {
+            $('#showGrouping').append('<input type="checkbox" / id="'+d+'"> ' + d + '<br />');
+          });
+        }else{
+          $("#showGrouping").remove();
+        }
 
 
-          // To check if the this node exsists in the data from dataset
-          var k = $.inArray(node, nodeSet);
-          //   console.log(k);
+      }
 
-          if (k != -1) {
+      $('input[type="checkbox"]').change(function() {
+        var checkboxId = this.id;
+        if($(this).is(":checked")) {
+          groupList.push(checkboxId);
+        }
+        else{
+          var newgroupList = _.reject(groupList, function(d){
+            return d === checkboxId;
+          });
+          if(newgroupList.length!=0){
+            groupList.length = 0;
+            groupList = newgroupList;
+          }else{
+            checkboxId = "none";
+          }
+        }
+
+        drawmappings(menuChosen,checkboxId);
+
+      });
+
+    });
+
+
+    function unmap(){
+
+      groupList.length = 0;
+      stdDevList.length = 0;
+      var rectBar = d3.select("#leftContainer");
+      rectBar.selectAll('rect.mapN').remove();
+      rectBar.selectAll('rect.barN').remove();
+      rectBar.selectAll('text.textN').remove();
+
+      nodeInfo.forEach(function(d,i){
+        var selectRectId = "rect[id='" + nodeInfo[i].id + "']";
+        d3.select(selectRectId)
+          .attr("fill", "transparent");
+      })
+
+
+
+
+    }
+    function drawmappings(id,groupID){
+
+      if(groupID == 'none'){
+
+        $('input:checkbox').removeAttr('checked');
+        $("input[id^='none']").prop("checked","checked");
+        unmap();
+        return;
+      }
+      var dataset = Object.keys(allDatasets);
+      var color;
+      var datasetName;
+
+      if (id === 'mrnaexpression') {
+        color = "purple"
+        datasetName = "mRNA Expression";
+      }
+      if (id === 'copynumbervariation') {
+        color = "green";
+        datasetName = "Copy Number Expression";
+      }
+
+      $('#dataset').html(datasetName);
+
+      ccle.rows(id).then(function (data) {
+        $('#genes').html(data.length);
+      });
+
+      ccle.cols(id).then(function (data) {
+        $('#celLines').html(data.length);
+      });
+
+      ccle.stats(id).then(function (data) {
+        $('#mean').html(data.mean);
+        $('#std').html(data.std);
+        $('#max').html(data.max);
+        $('#min').html(data.min);
+      });
+
+
+      var group = Object.keys(allDatasets[id]);
+
+      var color = d3.scale.linear()
+        .domain([-10, 0, 10])
+        .range(["blue", "white", "red"]);
+
+
+      var rectBar = d3.select("#leftContainer");
+
+      var nodeInData = allDatasets[id][group[0]];
+
+      var nodeSet = Object.keys(nodeInData);
+
+
+      nodeNames.forEach(function (d, i) {
+
+
+        var stdN = {};
+        var node = nodeNames[i];
+        var nodeId = nodeInfo[i].id;
+        var nodeX = nodeInfo[i].x;
+        var nodeY = nodeInfo[i].y;
+        var nodeH = nodeInfo[i].height;
+        var nodeW = nodeInfo[i].width;
+        var nodeAvg = 0;
+        var varianceAvg = 0;
+
+
+        // To check if the this node exsists in the data from dataset
+        var k = $.inArray(node, nodeSet);
+        //   console.log(k);
+
+        if (k != -1) {
+
+          if(groupID == 'all'){
+
             group.forEach(function (d, i) {
 
 
@@ -283,45 +397,95 @@ define(['jquery', 'd3', 'underscore', '../caleydo_core/ajax', '../pathfinder_ccl
               // console.log(valueList);
 
             });
-            //console.log(node, '---', nodeAvg, '---', color(nodeAvg), '--->', varianceAvg);
+          }else{
 
-            var selectRectId = "rect[id='" + nodeId + "']";
-            d3.select(selectRectId)
-              .attr("fill", color(nodeAvg));
+           // console.log("when only one group id selected",groupID);
+           // console.log(groupList);
+
+           // console.log(groupList.length);
+            for(var g=0;g<groupList.length;g++){
+
+              var valueList = allDatasets[id][groupList[g]][node].data;
+
+              var statsList = allDatasets[id][groupList[g]][node].stats;
+
+//              console.log(node,'-->',groupList[g],"---",statsList.std);
+              // console.log(node,'-->',group[i],'std:--',statsList.std,'var:--',Math.pow(statsList.std, 2));
+              for (var i = 0; i <= valueList.length - 1; i++) {
+                nodeAvg += valueList[i];
+
+              }
+              //  varianceAvg += Math.pow(statsList.std, 2);
+              varianceAvg += statsList.std;
+              varianceAvg /= statsList.numElements;
+              nodeAvg /= statsList.numElements;
+            }
 
 
-            rectBar.append("svg:rect")
-              .attr("x", nodeX - nodeW / 2)
-              .attr("y", nodeY - nodeH / 2 - 5)
-              .attr("height", 5)
-              .attr("width", nodeW)
-              .attr("style", "stroke:black;stroke-width:1")
-              .attr("fill", "none");
 
 
-            rectBar.append("svg:rect")
-              .attr("x", nodeX - nodeW / 2)
-              .attr("y", nodeY - nodeH / 2 - 5)
-              .attr("height", 5)
-              .attr("width", varianceAvg * 100)
-              .attr("fill", "green");
-
-
-            //var nodeNLen = nodeN.split(",");
-            //console.log(nodeNLen);
-            //if (nodeNLen.length > 0) {
-            //  console.log("draw triangle");
-            //}
           }
 
 
-        });
+
+          stdN.name = node;
+          stdN.std = varianceAvg;
+
+          stdDevList.push(stdN);
+
+         //s console.log(node, '---', nodeAvg, '---', color(nodeAvg), '--->', varianceAvg);
+
+          var selectRectId = "rect[id='" + nodeId + "']";
+          d3.select(selectRectId)
+            .attr("fill", color(nodeAvg));
 
 
-      }
+          rectBar.append("svg:rect")
+            .attr("x", nodeX - nodeW / 2)
+            .attr("y", nodeY - nodeH / 2 - 5)
+            .attr("class","mapN")
+            .attr("height", 5)
+            .attr("width", nodeW)
+            .attr("style", "stroke:black;stroke-width:1")
+            .attr("fill", "none");
 
 
-    });
+          rectBar.append("svg:rect")
+            .attr("x", nodeX - nodeW / 2)
+            .attr("y", nodeY - nodeH / 2 - 5)
+            .attr("class","barN")
+            .attr("height", 5)
+            .attr("width", varianceAvg * 100)
+            .attr("fill", "green");
+
+
+          rectBar.append("text")
+            .attr("x",nodeX - nodeW / 2 + 7)
+            .attr("y", nodeY - nodeH / 2 + 15)
+            .text(node)
+            .attr("class","textN")
+            .attr('fill','black')
+            .attr("font-family", "Times New Roman")
+            .attr("font-size", "13px");
+
+
+          //var nodeNLen = nodeN.split(",");
+          //console.log(nodeNLen);
+          //if (nodeNLen.length > 0) {
+          //  console.log("draw triangle");
+          //}
+        }
+
+
+
+      });
+
+    //  console.log("??");
+
+
+
+    }
+
 
 
   });
@@ -678,7 +842,17 @@ define(['jquery', 'd3', 'underscore', '../caleydo_core/ajax', '../pathfinder_ccl
           .duration(200)
           .style("opacity", .9);
 
-        div.html(node.name)
+        var name = node.name;
+       // console.log(node.name);
+        if(stdDevList.length!=0){
+
+          stdDevList.forEach(function(d){
+            if (getNodeName(node.name) === d.name){
+              name = d.std;
+            }
+          });
+        }
+        div.html(name)
           .style("left", (d3.event.pageX) + "px")
           .style("top", (d3.event.pageY - 28) + "px");
 
@@ -732,7 +906,26 @@ define(['jquery', 'd3', 'underscore', '../caleydo_core/ajax', '../pathfinder_ccl
             var rectSourceId = "rect[id='"+sourceNode.id+"']";
             unselectNodes(parent,rectSourceId);
 
+
+
 */
+
+
+
+
+            //console.log(edges);
+
+
+            //var visited=[]
+            //var paths=[]
+            //var Queue=[];
+            //for (i = 0; i < nodes.length; i += 1) {
+            //  Queue.push(nodes[i].id);
+            //}
+            //
+            //allPaths(edges,nodes,Queue,visited,paths,sourceNode,targetNode);
+
+
             var i;
             //CODE FOR SHORTEST PATH ALGORITHM //
             var path = shortestPathAlgo(matrix, nodes, sourceNode, targetNode);
@@ -1134,6 +1327,37 @@ define(['jquery', 'd3', 'underscore', '../caleydo_core/ajax', '../pathfinder_ccl
   }
 
 
+  function allPaths(edges,nodes,Queue,visited,paths,currentNode,targetNode) {
+
+
+    console.log(Queue);
+    console.log(visited);
+    if(currentNode == targetNode || Queue.length==0){
+
+      paths.push(visited);
+      console.log(paths);
+      return;
+    }else{
+
+      //console.log("here>");
+      var v = _.filter(edges, function (item) {
+        if (item.source.id == currentNode.id) {
+          return item.target;
+        }
+      });
+
+      v.forEach(function(d){
+     //   console.log(d);
+       //
+         visited.push(d.id);
+         Queue.splice(index, 1);
+        allPaths(edges,nodes,Queue,visited,paths, d.id,targetNode);
+      });
+
+
+    }
+
+  }
   function shortestPathAlgo(matrix, nodes, sourceNode, targetNode) {
 
 
@@ -1268,7 +1492,7 @@ define(['jquery', 'd3', 'underscore', '../caleydo_core/ajax', '../pathfinder_ccl
     pos = targetNode.id;
     //
     //console.log("CHERE??");
-    // console.log(previous);
+   // console.log(previous);
 
     path.push(pos);
     while (pos != sourceNode.id) {
