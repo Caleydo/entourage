@@ -348,6 +348,11 @@ define(['jquery', 'd3', 'underscore', '../caleydo_core/ajax', '../pathfinder_ccl
 
 
       var rectBar = d3.select("#leftContainer");
+      rectBar.selectAll('rect.barN').remove();
+
+      var div = d3.select("body").append("div")
+        .attr("class", "tooltip")
+        .style("opacity", 0);
 
       var nodeInData = allDatasets[id][group[0]];
 
@@ -392,7 +397,7 @@ define(['jquery', 'd3', 'underscore', '../caleydo_core/ajax', '../pathfinder_ccl
 
               //  varianceAvg += Math.pow(statsList.std, 2);
               varianceAvg += statsList.std;
-              varianceAvg /= statsList.numElements;
+             // varianceAvg /= statsList.numElements;
               nodeAvg /= statsList.numElements;
               // console.log(valueList);
 
@@ -417,9 +422,11 @@ define(['jquery', 'd3', 'underscore', '../caleydo_core/ajax', '../pathfinder_ccl
               }
               //  varianceAvg += Math.pow(statsList.std, 2);
               varianceAvg += statsList.std;
-              varianceAvg /= statsList.numElements;
+             // varianceAvg /= statsList.numElements;
               nodeAvg /= statsList.numElements;
             }
+
+
 
 
 
@@ -429,11 +436,11 @@ define(['jquery', 'd3', 'underscore', '../caleydo_core/ajax', '../pathfinder_ccl
 
 
           stdN.name = node;
-          stdN.std = varianceAvg;
+          stdN.std = varianceAvg.toFixed(2);
 
           stdDevList.push(stdN);
 
-          //s console.log(node, '---', nodeAvg, '---', color(nodeAvg), '--->', varianceAvg);
+//          console.log(node, '---', nodeAvg, '---', color(nodeAvg), '--->', varianceAvg);
 
           var selectRectId = "rect[id='" + nodeId + "']";
           d3.select(selectRectId)
@@ -455,7 +462,7 @@ define(['jquery', 'd3', 'underscore', '../caleydo_core/ajax', '../pathfinder_ccl
             .attr("y", nodeY - nodeH / 2 - 5)
             .attr("class","barN")
             .attr("height", 5)
-            .attr("width", varianceAvg * 100)
+            .attr("width", varianceAvg)
             .attr("fill", "green");
 
 
@@ -466,27 +473,43 @@ define(['jquery', 'd3', 'underscore', '../caleydo_core/ajax', '../pathfinder_ccl
             .attr("class","textN")
             .attr('fill','black')
             .attr("font-family", "Times New Roman")
-            .attr("font-size", "13px");
+            .attr("font-size", "13px")
+            .on("mouseover", function () {
 
 
-          //var nodeNLen = nodeN.split(",");
-          //console.log(nodeNLen);
-          //if (nodeNLen.length > 0) {
-          //  console.log("draw triangle");
-          //}
+
+              div.transition()
+                .duration(200)
+                .style("opacity", .9);
+
+
+              div.html(stdN.std)
+                .style("left", (d3.event.pageX) + "px")
+                .style("top", (d3.event.pageY - 28) + "px")
+                .style("background","#333")
+                .style("background","rgba(0,0,0,.8);")
+                .style("border-radius","5px")
+                .style("color","#fff")
+                .style("bottom","26px;")
+                .style("padding","5px 15px;")
+                .style("left","20%;");
+
+            })
+            .on("mouseout", function () {
+
+
+                div.transition()
+                  .duration(500)
+                  .style("opacity", 0);
+
+            });
         }
 
 
 
       });
 
-      //  console.log("??");
-
-
-
     }
-
-
 
   });
 
@@ -854,7 +877,14 @@ define(['jquery', 'd3', 'underscore', '../caleydo_core/ajax', '../pathfinder_ccl
         }
         div.html(name)
           .style("left", (d3.event.pageX) + "px")
-          .style("top", (d3.event.pageY - 28) + "px");
+          .style("top", (d3.event.pageY - 28) + "px")
+          .style("background","#333")
+          .style("background","rgba(0,0,0,.8);")
+          .style("border-radius","5px")
+          .style("color","#fff")
+          .style("bottom","26px;")
+          .style("padding","5px 15px;")
+          .style("left","20%;");
 
       })
       .on("mouseout", function () {
@@ -916,16 +946,12 @@ define(['jquery', 'd3', 'underscore', '../caleydo_core/ajax', '../pathfinder_ccl
             //console.log(edges);
 
 
-            //var visited=[]
-            //var paths=[]
-            //var Queue=[];
-            //for (i = 0; i < nodes.length; i += 1) {
-            //  Queue.push(nodes[i].id);
-            //}
-            //
-            //allPaths(edges,nodes,Queue,visited,paths,sourceNode,targetNode);
 
 
+          // allPaths(edges,nodes,Queue,visited,paths,sourceNode,targetNode);
+
+          //  AllPaths(edges,nodes,sourceNode,targetNode);
+           // var allPaths = AllPaths(matrix, nodes, sourceNode, targetNode);
             var i;
             //CODE FOR SHORTEST PATH ALGORITHM //
             var path = shortestPathAlgo(matrix, nodes, sourceNode, targetNode);
@@ -1327,35 +1353,99 @@ define(['jquery', 'd3', 'underscore', '../caleydo_core/ajax', '../pathfinder_ccl
   }
 
 
-  function allPaths(edges,nodes,Queue,visited,paths,currentNode,targetNode) {
+  function AllPaths(edges,nodes,sourceNode,targetNode){
+
+    var visited = [];
+
+   // bool *visited = new bool[V]
+    var path = [];
+
+    var path_index = 0;
+    // Initialize all vertices as not visited
+    for (var i = 0; i < nodes.length; i++){
+      var visit = {};
+      visit.id = nodes[i].id;
+      visit.visited = false;
+      visited.push(visit);
+    }
+
+    //console.log(visited);
+
+    getAllPaths(edges,sourceNode, targetNode, visited, path, path_index);
+  }
+
+  function  getAllPaths(edges,sourceNode, targetNode, visited, path, path_index){
+
+    // Mark the current node and store it in path[]
+
+   // visited[u] = true;
 
 
-    console.log(Queue);
-    console.log(visited);
-    if(currentNode == targetNode || Queue.length==0){
+    visited.forEach(function(d,i){
+      if(d.id == sourceNode.id){
+        d.visited = true;
+      }
+    })
 
-      paths.push(visited);
-      console.log(paths);
-      return;
-    }else{
+    //console.log(visited);
+    path[path_index] = sourceNode.id;
+    path_index++;
 
-      //console.log("here>");
+    console.log(path);
+    // If current vertex is same as destination, then print
+    // current path[]
+    if (sourceNode.id == targetNode.id)
+    {
+      for (var i = 0; i < path_index; i++){
+       console.log(path[i])
+      }
+    }
+    else // If current vertex is not destination
+    {
+      // console.log("here??");
+      // Recur for all the vertices adjacent to current vertex
       var v = _.filter(edges, function (item) {
-        if (item.source.id == currentNode.id) {
+        if (item.source.id == sourceNode.id) {
           return item.target;
         }
       });
 
-      v.forEach(function(d){
-        //   console.log(d);
-        //
-        visited.push(d.id);
-        Queue.splice(index, 1);
-        allPaths(edges,nodes,Queue,visited,paths, d.id,targetNode);
+      v.forEach(function(val) {
+
+       // console.log(val);
+
+       visited.forEach(function (d) {
+
+          //console.log(d.id,'----',val.target.id);
+          if (d.id == val.target.id) {
+
+            //console.log(d.id);
+            if (!d.value) {
+              getAllPaths(edges, val.target, targetNode, visited, path, path_index);
+            }
+
+          }
+        })
+
       });
+
+      // Remove current vertex from path[] and mark it as unvisited
+      path_index--;
+
+      visited.forEach(function(d,i){
+        if(d.id == sourceNode.id){
+          d.visited = false;
+        }
+      })
+
 
 
     }
+
+
+
+
+
 
   }
   function shortestPathAlgo(matrix, nodes, sourceNode, targetNode) {
