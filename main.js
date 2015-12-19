@@ -53,37 +53,52 @@ define(['jquery', 'd3', 'underscore', '../caleydo_core/ajax', '../pathfinder_ccl
 
 
 
-  var a,c,e;
+  var a,c,e,m,s;
   var b = 50;
   var d = 50;
   var f = 70;
+  var l = 50;
+  var p = 10;
+  var q = 10;
   var temp = b;
   var tempF = 70;
   var array = [];
   var count = 0;
   var id = 100;
   var idText = 1000;
-  var nodeGroup;
-
+  var geneId = 150;
+  var geneTextId = 1500;
+  var valueList =[];
+  var enrouteNodeName = [];
+  var enrouteNodeId = [];
+  var enrouteNodeX = [];
+  var enrouteNodeY = [];
+  var geneIdArray = [];
+  var geneTextIdArray = [];
   var menuChosen;
+  var nodeGroup;
   var nodeInfo = [];
   var nodeNames = [];
   var allDatasets = {};
   var groupFlag = false;
   var groupList = [];
   var stdDevList = [];
-
-
+  var barId = 2000;
+  var barIdArray = [];
   $(document).ready(function () {
     //$.get("/api/pathway", function (resp) {
     // $('<h1>'+resp+'</h1>').appendTo('body');
     //});
 
 
+    //
+    //var nodeInfo = [];
+    //var nodeNames = [];
+    //var allDatasets = {};
 
     var NewPath;
     var rightNodeGroup;
-    $.get("/api/kegg_pathways/list", function (response) {
+   $.get("/api/kegg_pathways/list", function (response) {
 
 
       if (typeof(response) === "string") {
@@ -123,6 +138,8 @@ define(['jquery', 'd3', 'underscore', '../caleydo_core/ajax', '../pathfinder_ccl
             a = width;
             c = width;
             e = width;
+            m = width + 250;
+            s = m;
             svg.attr("width", width+400)
               .attr("height", height);
 
@@ -173,7 +190,6 @@ define(['jquery', 'd3', 'underscore', '../caleydo_core/ajax', '../pathfinder_ccl
       });
 
     $('#menu').on("click", "li a", function() {
-
       //alert($(this.attr("id")));
       var id = $(this).attr("id");
 
@@ -192,17 +208,29 @@ define(['jquery', 'd3', 'underscore', '../caleydo_core/ajax', '../pathfinder_ccl
         }
 
         if(id === "enroute"){
-          var unselect = d3.select("body").selectAll("rect");
-          unselect.attr("style","outline:none");
-        }
+                var unselect = d3.select("body").selectAll("rect")
+                unselect.attr("style","outline:none");
+                }
+
       } else {
         $(this).attr("selected", "selected");
         $(this).attr("style", "background-color: #3091ff;");
 
 
       }
+      //idText.length != 0 && menuChosen != 'enroute'
+      if(id === 'enroute')
+      {
+          if(menuChosen === 'mrnaexpression' || menuChosen === 'copynumbervariation')
+          {
+            drawmappings(menuChosen);
+          }
+      }
+
 
       if (id === 'mrnaexpression' || id === 'copynumbervariation') {
+
+       // alert("here>");
 
         // To check if the dataset is ready or not.If not no mapping is done
         if(jQuery.isEmptyObject(allDatasets)){
@@ -215,6 +243,7 @@ define(['jquery', 'd3', 'underscore', '../caleydo_core/ajax', '../pathfinder_ccl
           return;
 
         }
+
 
         //console.log("test??");
         if ($(this).attr("selected")) {
@@ -243,6 +272,7 @@ define(['jquery', 'd3', 'underscore', '../caleydo_core/ajax', '../pathfinder_ccl
       }
 
       if(id === "group"){
+        alert("test this!");
         if ($(this).attr("selected")) {
 
           $('#showGrouping').append('<input type="checkbox" id="none">none<br />');
@@ -300,6 +330,7 @@ define(['jquery', 'd3', 'underscore', '../caleydo_core/ajax', '../pathfinder_ccl
 
 
     }
+
     function drawmappings(id,groupID){
 
       if(groupID == 'none'){
@@ -397,7 +428,7 @@ define(['jquery', 'd3', 'underscore', '../caleydo_core/ajax', '../pathfinder_ccl
 
               //  varianceAvg += Math.pow(statsList.std, 2);
               varianceAvg += statsList.std;
-             // varianceAvg /= statsList.numElements;
+              // varianceAvg /= statsList.numElements;
               nodeAvg /= statsList.numElements;
               // console.log(valueList);
 
@@ -422,7 +453,7 @@ define(['jquery', 'd3', 'underscore', '../caleydo_core/ajax', '../pathfinder_ccl
               }
               //  varianceAvg += Math.pow(statsList.std, 2);
               varianceAvg += statsList.std;
-             // varianceAvg /= statsList.numElements;
+              // varianceAvg /= statsList.numElements;
               nodeAvg /= statsList.numElements;
             }
 
@@ -498,11 +529,93 @@ define(['jquery', 'd3', 'underscore', '../caleydo_core/ajax', '../pathfinder_ccl
             .on("mouseout", function () {
 
 
-                div.transition()
-                  .duration(500)
-                  .style("opacity", 0);
+              div.transition()
+                .duration(500)
+                .style("opacity", 0);
 
             });
+
+
+// CREATING BAR CHART AND ENROUTE REACTION TO MRNA AND COPY NUMBER-------------------------------------------------------------------
+
+          for( var i = 1; i<enrouteNodeName.length; i++)
+          {
+            // drawBarChart(i,id,node,rectBar,valueList,nodeAvg,varianceAvg);
+
+            l = enrouteNodeY[i] + 10;
+            if(node == enrouteNodeName[i])
+            {
+              var filler = "rect[id='" + enrouteNodeId[i] + "']";
+              console.log(valueList);
+              for(var i=0; i<valueList.length; i++){
+
+                rectBar.append("svg:rect")
+                  .attr("x", enrouteNodeX[i])
+                  .attr("y", enrouteNodeY[i]-6)
+                  .attr("height", 5)
+                  .attr("width", 70)
+                  .attr('id',barId)
+                  .attr("style", "stroke:black;stroke-width:1")
+                  .attr("fill", "none");
+                barIdArray.push(barId);
+                barId = barId + 1;
+
+                rectBar.append("svg:rect")
+                  .attr("x", enrouteNodeX[i])
+                  .attr("y", enrouteNodeY[i]-6)
+                  .attr('id', barId)
+                  .attr("height", 5)
+                  .attr("width", varianceAvg * 100)
+                  .attr("fill", "green");
+                barIdArray.push(barId);
+                barId = barId + 1;
+//                    d3.select('g').append('line').attr('id',barId).attr('x1',s).attr('y1',enrouteNodeY[i]+10)
+//                                  .attr('x2',s+170).attr('y2',enrouteNodeY[i]+10).attr('stroke','black');
+                d3.select("g").append('line').attr('id',barId).attr('x1', function(){
+                    m = m + 7;
+                    return m;
+                  })
+                  .attr('y1', l)
+                  .attr('x2', m)
+                  .attr('y2', function(){
+                    if (id === 'mrnaexpression'){
+                      var y2 = l-(valueList[i]);
+                      return y2;
+                    }
+                    else{
+                      var y2 = l-(valueList[i]*30);
+                      return y2;
+                    }
+
+                  })
+
+                  .attr('stroke',function(){
+
+                    if(valueList[i] > 0)
+                    {
+                      return 'red';
+                    }
+                    else if (valueList[i] < 0)
+                    {
+                      return 'blue';
+                    }
+                    else
+                    {
+                      return 'white';
+                    }
+                  })
+                  .attr('stroke-weight', 50);
+
+              }
+              m = s;
+              barIdArray.push(barId);
+              barId = barId + 1;
+              d3.select(filler)
+                .attr("fill", color(nodeAvg));
+
+
+            }
+          }
         }
 
 
@@ -545,7 +658,7 @@ define(['jquery', 'd3', 'underscore', '../caleydo_core/ajax', '../pathfinder_ccl
 
     function dataReady() {
       console.log(allDatasets);
-      // logData(dataset,group,node);
+     // logData(dataset,group,node);
     }
 
     //
@@ -846,10 +959,12 @@ define(['jquery', 'd3', 'underscore', '../caleydo_core/ajax', '../pathfinder_ccl
       //.attr("stroke","red")
       .attr("fill", "transparent")
       .attr("name",function(node){
-        var text = node.name;
-        var name = String(text);
-        var nodeName = name.split(",");
-        return nodeName[0];})
+     /* var text = node.name;
+       var name = String(text);
+       var nodeName = name.split(",");
+       return nodeName[0];
+       */
+       return node.name;})
       .attr("id", function (node) {
         return node.id;
       })
@@ -865,17 +980,7 @@ define(['jquery', 'd3', 'underscore', '../caleydo_core/ajax', '../pathfinder_ccl
           .duration(200)
           .style("opacity", .9);
 
-        var name = node.name;
-        // console.log(node.name);
-        if(stdDevList.length!=0){
-
-          stdDevList.forEach(function(d){
-            if (getNodeName(node.name) === d.name){
-              name = d.std;
-            }
-          });
-        }
-        div.html(name)
+        div.html(node.name)
           .style("left", (d3.event.pageX) + "px")
           .style("top", (d3.event.pageY - 28) + "px")
           .style("background","#333")
@@ -929,16 +1034,7 @@ define(['jquery', 'd3', 'underscore', '../caleydo_core/ajax', '../pathfinder_ccl
 
             var rectSourceId = "rect[id='" + sourceNode.id + "']";
             unselectNodes(parent, rectSourceId);
-            /*
-             text = node.name;
-             name = String(text);
-             nodeName = name.split(",");
-             var rectSourceId = "rect[id='"+sourceNode.id+"']";
-             unselectNodes(parent,rectSourceId);
 
-
-
-             */
 
 
 
@@ -952,6 +1048,10 @@ define(['jquery', 'd3', 'underscore', '../caleydo_core/ajax', '../pathfinder_ccl
 
           //  AllPaths(edges,nodes,sourceNode,targetNode);
            // var allPaths = AllPaths(matrix, nodes, sourceNode, targetNode);
+
+
+
+
             var i;
             //CODE FOR SHORTEST PATH ALGORITHM //
             var path = shortestPathAlgo(matrix, nodes, sourceNode, targetNode);
@@ -1448,6 +1548,7 @@ define(['jquery', 'd3', 'underscore', '../caleydo_core/ajax', '../pathfinder_ccl
 
 
   }
+
   function shortestPathAlgo(matrix, nodes, sourceNode, targetNode) {
 
 
@@ -1610,6 +1711,8 @@ define(['jquery', 'd3', 'underscore', '../caleydo_core/ajax', '../pathfinder_ccl
 
     var id = selectedNode.id;
     var nodeClickedName = $("rect[id='"+id+"']").attr("name");
+    var nodeClickedX = $("rect[id='"+id+"']").attr("x");
+    var nodeClickedY = $("rect[id='"+id+"']").attr("y");
 
     var unselectRect = parent.selectAll("rect");
 
@@ -1618,26 +1721,25 @@ define(['jquery', 'd3', 'underscore', '../caleydo_core/ajax', '../pathfinder_ccl
     unselectRect.attr("style", "outline: none");
 
     unselectLines.attr("stroke", "transparent");
+
     //unselectLines.attr("stroke-width","0");
 
+
+
+
     if(!jQuery.isEmptyObject(selectedNode)){
-      if($( "#menu a#enroute" ).attr('selected'))
-      {
-        highlightNodes(selectedNode,'sourceNode');
-        // drawRectEnroute(nodeClickedName);
-        // putTextEnroute(nodeClickedName);
-        /* for(int i = 0; i<array.length;i++)
-         {
-         //d3.select("#array[i]").remove();
-         }*/
-      }
+     if($( "#menu a#enroute" ).attr('selected'))
+     {
+           highlightNodes(selectedNode,'sourceNode');
+
+     }
       else
       {
-        highlightNodes(selectedNode,'sourceNode');
+       highlightNodes(selectedNode,'sourceNode');
 
       }
 
-    }
+     }
 
 
   }
@@ -1671,7 +1773,6 @@ define(['jquery', 'd3', 'underscore', '../caleydo_core/ajax', '../pathfinder_ccl
 
   function highlightNodes(nodeH, nodeType) {
 
-    var nodeClickedName = $(nodeH).attr("name");
     var color = 'none';
     if (nodeType == 'sourceNode') {
       color = 'yellow';
@@ -1681,74 +1782,185 @@ define(['jquery', 'd3', 'underscore', '../caleydo_core/ajax', '../pathfinder_ccl
       color = 'red';
     }
     if($( "#menu a#enroute" ).attr('selected'))
-    {
-      var prop = "outline: thick solid "+color+";";
-      d3.select(nodeH)
-        .attr("style",prop);
+        {
+          resetAll(nodeH,nodeType);
+          var prop = "outline: thick solid "+color+";";
+                    d3.select(nodeH)
+                      .attr("style",prop);
+        }
+        else
+        {
+             var prop = "outline: thick solid "+color+";";
+                 d3.select(nodeH)
+                   .attr("style",prop);
 
-
-      count++;
-      if(nodeType == 'sourceNode')
-      {
-        b = temp;
-        d = temp;
-        f = tempF;
-
-
-      }
-
-      drawRectEnroute(nodeClickedName);
-      putTextEnroute(nodeClickedName);
-      if(nodeType != 'targetNode')
-      {
-        drawPathLinesEnroute();
-      }
-    }
-    else
-    {
-      var prop = "outline: thick solid "+color+";";
-      d3.select(nodeH)
-        .attr("style",prop);
-
-    }
+        }
 
   }
 
-  function drawRectEnroute(nodeClickedName)
+
+// DELETING ENROUTE WHEN A NEW PATH IS SELECTED-------------------------------------------------------
+
+function resetAll(nodeH,nodeType){
+
+console.log('nodeH =',nodeH);
+    var nodeClickedName = $(nodeH).attr("name");
+    var nodeClickedX = $(nodeH).attr("x");
+    var nodeClickedY = $(nodeH).attr("y");
+
+
+
+
+          count++;
+          if(nodeType == 'sourceNode')
+          {
+          b = temp;
+          d = temp;
+          f = tempF;
+          p = 10;
+          q = 10;
+
+
+          for(var i = 0; i<enrouteNodeId.length;i++)
+              {
+                    var removeId = "rect[id='" + enrouteNodeId[i] + "']";
+                    d3.select(removeId).remove();
+              }
+          for(var i = 0; i<array.length;i++)
+                        {
+                              var removeId = "text[id='" + array[i] + "']";
+                              d3.select(removeId).remove();
+                        }
+          for(var i = 0; i<geneIdArray.length;i++)
+                        {
+                              var removeId = "rect[id='" + geneIdArray[i] + "']";
+                              d3.select(removeId).remove();
+                        }
+          for(var i = 0; i<geneTextIdArray.length;i++)
+              {
+                    var removeId = "text[id='" + geneTextIdArray[i] + "']";
+                    d3.select(removeId).remove();
+              }
+
+          removeBarChart();
+
+          d3.selectAll('circle').remove();
+
+          }
+
+          drawRectEnroute(nodeClickedName,nodeClickedX,nodeClickedY);
+          putTextEnroute(nodeClickedName);
+          if(nodeType != 'targetNode')
+          {
+            drawPathLinesEnroute();
+          }
+
+
+
+}
+
+
+function removeBarChart()
+{
+  for(var i = 0; i<barIdArray.length;i++)
   {
-    //alert(id);
-    d3.select("g").append('rect').transition().attr("fill","none").attr('stroke','black').attr("stroke-width","2.5").attr('id',id)
-      .attr("x", a+40).attr("y",b).attr("width",70).attr("height", 20).attr("name",nodeClickedName)
-      /*.on('mouseover'function(){
-       d3.select(this)
-       .attr("style", "outline: thick solid orange;");
-       })*/;
-    b = b + 80;
-    id = id + 1;
+        var removeId = "rect[id='" + barIdArray[i] + "']";
+        d3.select(removeId).remove();
+  }
+
+}
+
+
+// RECREATING ENROUTE WHEN NEW PATH IS SELECTED-------------------------------------------------------------------------
+
+function drawRectEnroute(nodeClickedName,nodeClickedX,nodeClickedY)
+{
+  //alert(id);
+  var datasetBar = [1,2,3];
+  var firstName = nodeClickedName.split(",");
+  d3.select("g").append('rect').transition().attr("fill","none").attr('stroke','black').attr("stroke-width","2.5").attr('id',id)
+    .attr("x", a+40).attr("y",b).attr("width",70).attr("height", 20).attr("name",firstName[0]);
+
+    enrouteNodeName.push(firstName[0]);
+    enrouteNodeId.push(id);
+    enrouteNodeX.push(a+40);
+    enrouteNodeY.push(b);
+
+  id = id + 1;
+//  if ($( "#menu a#mrnaexpression" ).attr('selected') || $( "#menu a#copynumbervariation" ).attr('selected')) {
+//                alert(menuChosen);
+//               //menuChosen = id;
+//               drawMappings(menuChosen);
+//
+//        }
+   if (firstName.length < 4){
+    var len = firstName.length;
+   }
+   else{
+    var len = 4;
+   }
+  for(var i = 1; i<len; i++)
+  { console.log('x1',nodeClickedX,'y1',nodeClickedY,'x2',a+155,'y2',p+10);
+    d3.select("g").append('rect').transition().attr("fill","orange").attr('stroke','black').attr("stroke-width","2.5")
+        .attr('id',geneId).attr("x", a+155).attr("y",p).attr("width",70).attr("height", 20).attr("name",firstName[i]);
+    d3.select("g").append('line').attr('x1', a+110).attr('y1',b+10)
+            .attr('x2', a+155).attr('y2',p+10)
+            .attr("stroke","#ff884d").attr("stroke-width","0.5");
+
+    p = p + 30;
+    geneIdArray.push(geneId);
+    geneId = geneId + 1;
+
 
   }
 
-  function putTextEnroute(nodeClickedName)
-  {
-    d3.select("g").append('text').text(nodeClickedName).attr('x',c+49).attr('id',idText)
+  b = b + 80;
+
+}
+
+function putTextEnroute(nodeClickedName)
+{
+    var firstName = nodeClickedName.split(",");
+    d3.select("g").append('text').text(firstName[0]).attr('x',c+49).attr('id',idText)
       .attr('y', d+14).attr('fill','black')
       .attr("font-family", "Times New Roman")
       .attr("font-size", "13px");
     d = d + 80;
     array.push(idText);
     idText = idText + 1;
+    if (firstName.length < 4){
+        var len = firstName.length;
+       }
+       else{
+        var len = 4;
+       }
+    for(var i = 1; i<len; i++)
+      {
+        d3.select("g").append('text').text(firstName[i]).attr('x',a+160)
+              .attr('y', q+14).attr('fill','black').attr('id',geneTextId)
+              .attr("font-family", "Times New Roman")
+              .attr("font-size", "13px");
+        geneTextIdArray.push(geneTextId);
+        geneTextId = geneTextId + 1;
+        q = q + 30;
 
-  }
+      }
 
-  function drawPathLinesEnroute()
-  {
-    d3.select("g").append('line').attr('x1', e+75).attr('y1',f)
-      .attr('x2', e+75).attr('y2',f+60)
-      .attr("stroke","#ff884d").attr("stroke-width","2.5");
-    f = f +80;
-  }
+}
 
-// ONLY COMMENTS AFTER THIS POINT --- IGNORE FOR NOW ---
+function drawPathLinesEnroute()
+{
+
+  for(var i = 0; i < 2; i++){
+  d3.select("g").append('line').attr('x1', e+75).attr('y1',f)
+    .attr('x2', e+75).attr('y2',f+60)
+    .attr("stroke","#ff884d").attr("stroke-width","2.5");
+   }
+  d3.select('g').append('circle').attr('cx',e+75).attr('cy',f+60).attr('r',3).attr('fill','black');
+  f = f +80;
+}
+
+// ONLY COMMENTS AFTER THIS POINT ------------------------------- IGNORE FOR NOW ---------------------------------------------------------------
 
 //function displayText(parent,allNodes)
 //{
