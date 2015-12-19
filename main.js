@@ -261,8 +261,8 @@ define(['jquery', 'd3', 'underscore', '../caleydo_core/ajax', '../pathfinder_ccl
         }else{
 
 
-          $('#menu ul li:last').remove();
-          $("#showGrouping").remove();
+          $('#menu ul li a#group').remove();
+          $("#showGrouping").empty();
           groupFlag = false;
           unmap();
         }
@@ -272,7 +272,7 @@ define(['jquery', 'd3', 'underscore', '../caleydo_core/ajax', '../pathfinder_ccl
       }
 
       if(id === "group"){
-        alert("test this!");
+     //   alert("test this!");
         if ($(this).attr("selected")) {
 
           $('#showGrouping').append('<input type="checkbox" id="none">none<br />');
@@ -281,7 +281,7 @@ define(['jquery', 'd3', 'underscore', '../caleydo_core/ajax', '../pathfinder_ccl
             $('#showGrouping').append('<input type="checkbox" / id="'+d+'"> ' + d + '<br />');
           });
         }else{
-          $("#showGrouping").remove();
+          $("#showGrouping").empty();
         }
 
 
