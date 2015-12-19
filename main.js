@@ -53,37 +53,45 @@ define(['jquery', 'd3', 'underscore', '../caleydo_core/ajax', '../pathfinder_ccl
 
 
 
-  var a,c,e;
+  var a,c,e,m,s;
   var b = 50;
   var d = 50;
   var f = 70;
+  var l = 50;
+  var p = 10;
+  var q = 10;
   var temp = b;
   var tempF = 70;
   var array = [];
   var count = 0;
   var id = 100;
   var idText = 1000;
-  var nodeGroup;
-
-  var menuChosen;
-  var nodeInfo = [];
-  var nodeNames = [];
-  var allDatasets = {};
-  var groupFlag = false;
-  var groupList = [];
-  var stdDevList = [];
-
-
+  var geneId = 150;
+  var geneTextId = 1500;
+  var valueList =[];
+  var enrouteNodeName = [];
+  var enrouteNodeId = [];
+  var enrouteNodeX = [];
+  var enrouteNodeY = [];
+  var geneIdArray = [];
+  var geneTextIdArray = [];
+  var menuChosen = 'enroute';
+  var barId = 2000;
+  var barIdArray = [];
   $(document).ready(function () {
     //$.get("/api/pathway", function (resp) {
     // $('<h1>'+resp+'</h1>').appendTo('body');
     //});
 
+    var nodeGroup;
 
+    var nodeInfo = [];
+    var nodeNames = [];
+    var allDatasets = {};
 
     var NewPath;
     var rightNodeGroup;
-    $.get("/api/kegg_pathways/list", function (response) {
+   $.get("/api/kegg_pathways/list", function (response) {
 
 
       if (typeof(response) === "string") {
@@ -123,6 +131,8 @@ define(['jquery', 'd3', 'underscore', '../caleydo_core/ajax', '../pathfinder_ccl
             a = width;
             c = width;
             e = width;
+            m = width + 250;
+            s = m;
             svg.attr("width", width+400)
               .attr("height", height);
 
@@ -172,8 +182,7 @@ define(['jquery', 'd3', 'underscore', '../caleydo_core/ajax', '../pathfinder_ccl
 
       });
 
-    $('#menu').on("click", "li a", function() {
-
+    $("#menu a").bind("click", function () {
       //alert($(this.attr("id")));
       var id = $(this).attr("id");
 
@@ -192,304 +201,244 @@ define(['jquery', 'd3', 'underscore', '../caleydo_core/ajax', '../pathfinder_ccl
         }
 
         if(id === "enroute"){
-          var unselect = d3.select("body").selectAll("rect");
-          unselect.attr("style","outline:none");
-        }
+                var unselect = d3.select("body").selectAll("rect")
+                unselect.attr("style","outline:none");
+                }
+
       } else {
         $(this).attr("selected", "selected");
         $(this).attr("style", "background-color: #3091ff;");
 
 
       }
-
-      if (id === 'mrnaexpression' || id === 'copynumbervariation') {
-
-        // To check if the dataset is ready or not.If not no mapping is done
-        if(jQuery.isEmptyObject(allDatasets)){
-
-          alert("DataSet is loading, please wait!");
-
-          $(this).removeAttr('selected');
-          $(this).attr("style", "background-color: none;");
-
-          return;
-
-        }
-
-        //console.log("test??");
-        if ($(this).attr("selected")) {
-
-
-
-          if(!groupFlag){
-
-            $('#menu ul li:last').after('<li><a href="#" id="group"> Grouping </a></li>');
-            groupFlag = true;
-
+      //idText.length != 0 && menuChosen != 'enroute'
+      if(id === 'enroute')
+      {
+          if(menuChosen === 'mrnaexpression' || menuChosen === 'copynumbervariation')
+          {
+            drawMappings(menuChosen);
           }
-          menuChosen = id;
-          drawmappings(id,'all');
-        }else{
+      }
+      if (id === 'mrnaexpression' || id === 'copynumbervariation'  ) {
 
 
-          $('#menu ul li:last').remove();
-          $("#showGrouping").remove();
-          groupFlag = false;
-          unmap();
-        }
-
-
+             menuChosen = id;
+             drawMappings(id);
 
       }
 
-      if(id === "group"){
-        if ($(this).attr("selected")) {
 
-          $('#showGrouping').append('<input type="checkbox" id="none">none<br />');
-          var group = Object.keys(allDatasets[menuChosen]);
-          group.forEach(function (d) {
-            $('#showGrouping').append('<input type="checkbox" / id="'+d+'"> ' + d + '<br />');
-          });
-        }else{
-          $("#showGrouping").remove();
-        }
-
-
-      }
-
-      $('input[type="checkbox"]').change(function() {
-        var checkboxId = this.id;
-        if($(this).is(":checked")) {
-          groupList.push(checkboxId);
-        }
-        else{
-          var newgroupList = _.reject(groupList, function(d){
-            return d === checkboxId;
-          });
-          if(newgroupList.length!=0){
-            groupList.length = 0;
-            groupList = newgroupList;
-          }else{
-            checkboxId = "none";
-          }
-        }
-
-        drawmappings(menuChosen,checkboxId);
-
-      });
 
     });
 
-
-    function unmap(){
-
-      groupList.length = 0;
-      stdDevList.length = 0;
-      var rectBar = d3.select("#leftContainer");
-      rectBar.selectAll('rect.mapN').remove();
-      rectBar.selectAll('rect.barN').remove();
-      rectBar.selectAll('text.textN').remove();
-
-      nodeInfo.forEach(function(d,i){
-        var selectRectId = "rect[id='" + nodeInfo[i].id + "']";
-        d3.select(selectRectId)
-          .attr("fill", "transparent");
-      })
+    function drawMappings(id){
 
 
+            var dataset = Object.keys(allDatasets);
+            var color;
+            var datasetName;
 
-
-    }
-    function drawmappings(id,groupID){
-
-      if(groupID == 'none'){
-
-        $('input:checkbox').removeAttr('checked');
-        $("input[id^='none']").prop("checked","checked");
-        unmap();
-        return;
-      }
-      var dataset = Object.keys(allDatasets);
-      var color;
-      var datasetName;
-
-      if (id === 'mrnaexpression') {
-        color = "purple"
-        datasetName = "mRNA Expression";
-      }
-      if (id === 'copynumbervariation') {
-        color = "green";
-        datasetName = "Copy Number Expression";
-      }
-
-      $('#dataset').html(datasetName);
-
-      ccle.rows(id).then(function (data) {
-        $('#genes').html(data.length);
-      });
-
-      ccle.cols(id).then(function (data) {
-        $('#celLines').html(data.length);
-      });
-
-      ccle.stats(id).then(function (data) {
-        $('#mean').html(data.mean);
-        $('#std').html(data.std);
-        $('#max').html(data.max);
-        $('#min').html(data.min);
-      });
-
-
-      var group = Object.keys(allDatasets[id]);
-
-      var color = d3.scale.linear()
-        .domain([-10, 0, 10])
-        .range(["blue", "white", "red"]);
-
-
-      var rectBar = d3.select("#leftContainer");
-
-      var nodeInData = allDatasets[id][group[0]];
-
-      var nodeSet = Object.keys(nodeInData);
-
-
-      nodeNames.forEach(function (d, i) {
-
-
-        var stdN = {};
-        var node = nodeNames[i];
-        var nodeId = nodeInfo[i].id;
-        var nodeX = nodeInfo[i].x;
-        var nodeY = nodeInfo[i].y;
-        var nodeH = nodeInfo[i].height;
-        var nodeW = nodeInfo[i].width;
-        var nodeAvg = 0;
-        var varianceAvg = 0;
-
-
-        // To check if the this node exsists in the data from dataset
-        var k = $.inArray(node, nodeSet);
-        //   console.log(k);
-
-        if (k != -1) {
-
-          if(groupID == 'all'){
-
-            group.forEach(function (d, i) {
-
-
-              var valueList = allDatasets[id][group[i]][node].data;
-
-              var statsList = allDatasets[id][group[i]][node].stats;
-
-              //console.log(node,'-->',group[i],"---",statsList.std);
-              // console.log(node,'-->',group[i],'std:--',statsList.std,'var:--',Math.pow(statsList.std, 2));
-              for (var i = 0; i <= valueList.length - 1; i++) {
-                nodeAvg += valueList[i];
-
-              }
-
-              //  varianceAvg += Math.pow(statsList.std, 2);
-              varianceAvg += statsList.std;
-              varianceAvg /= statsList.numElements;
-              nodeAvg /= statsList.numElements;
-              // console.log(valueList);
-
-            });
-          }else{
-
-            // console.log("when only one group id selected",groupID);
-            // console.log(groupList);
-
-            // console.log(groupList.length);
-            for(var g=0;g<groupList.length;g++){
-
-              var valueList = allDatasets[id][groupList[g]][node].data;
-
-              var statsList = allDatasets[id][groupList[g]][node].stats;
-
-//              console.log(node,'-->',groupList[g],"---",statsList.std);
-              // console.log(node,'-->',group[i],'std:--',statsList.std,'var:--',Math.pow(statsList.std, 2));
-              for (var i = 0; i <= valueList.length - 1; i++) {
-                nodeAvg += valueList[i];
-
-              }
-              //  varianceAvg += Math.pow(statsList.std, 2);
-              varianceAvg += statsList.std;
-              varianceAvg /= statsList.numElements;
-              nodeAvg /= statsList.numElements;
+            if (id === 'mrnaexpression') {
+              color = "purple"
+              datasetName = "mRNA Expression";
+            }
+            if (id === 'copynumbervariation') {
+              color = "green";
+              datasetName = "Copy Number Expression";
             }
 
+            $('#dataset').html(datasetName);
+
+            ccle.rows(id).then(function (data) {
+              $('#genes').html(data.length);
+            });
+
+            ccle.cols(id).then(function (data) {
+              $('#celLines').html(data.length);
+            });
+
+            ccle.stats(id).then(function (data) {
+              $('#mean').html(data.mean);
+              $('#std').html(data.std);
+              $('#max').html(data.max);
+              $('#min').html(data.min);
+            });
+
+
+            var group = Object.keys(allDatasets[id]);
+            //console.log(group);
+            var color = d3.scale.linear()
+              .domain([-10, 0, 10])
+              .range(["blue", "white", "red"]);
+
+
+            var rectBar = d3.select("#leftContainer");
+
+            var nodeInData = allDatasets[id][group[0]];
+
+            var nodeSet = Object.keys(nodeInData);
+
+            nodeNames.forEach(function (d, i) {
+
+
+              var node = nodeNames[i];
+           //   console.log(node);
+              //console.log(nodeInfo[i]);
+              var nodeId = nodeInfo[i].id;
+              var nodeN = nodeInfo[i].name;
+              var nodeX = nodeInfo[i].x;
+              var nodeY = nodeInfo[i].y;
+              var nodeH = nodeInfo[i].height;
+              var nodeW = nodeInfo[i].width;
+              var nodeAvg = 0;
+              var varianceAvg = 0;
+
+
+              // To check if the this node exsists in the data from dataset
+              var k = $.inArray(node, nodeSet);
+              //   console.log(k);
+
+              if (k != -1) {
+                group.forEach(function (d, i) {
+
+                  valueList = allDatasets[id][group[i]][node].data;
+                  //console.log('value list mRNA===' , valueList);
+
+                  var statsList = allDatasets[id][group[i]][node].stats;
+
+                  //console.log(node,'-->',group[i],"---",statsList.std);
+                  // console.log(node,'-->',group[i],'std:--',statsList.std,'var:--',Math.pow(statsList.std, 2));
+                  for (var i = 0; i <= valueList.length - 1; i++) {
+                    nodeAvg += valueList[i];
+
+                  }
+
+                  //  varianceAvg += Math.pow(statsList.std, 2);
+                  varianceAvg += statsList.std;
+                  varianceAvg /= statsList.numElements;
+                  nodeAvg /= statsList.numElements;
+                  // console.log(valueList);
 
 
 
-          }
+                });
+                //console.log(node, '---', nodeAvg, '---', color(nodeAvg), '--->', varianceAvg);
+
+                var selectRectId = "rect[id='" + nodeId + "']";
+                d3.select(selectRectId)
+                  .attr("fill", color(nodeAvg));
 
 
-
-          stdN.name = node;
-          stdN.std = varianceAvg;
-
-          stdDevList.push(stdN);
-
-          //s console.log(node, '---', nodeAvg, '---', color(nodeAvg), '--->', varianceAvg);
-
-          var selectRectId = "rect[id='" + nodeId + "']";
-          d3.select(selectRectId)
-            .attr("fill", color(nodeAvg));
+                rectBar.append("svg:rect")
+                  .attr("x", nodeX - nodeW / 2)
+                  .attr("y", nodeY - nodeH / 2 - 5)
+                  .attr("height", 5)
+                  .attr("width", nodeW)
+                  .attr("style", "stroke:black;stroke-width:1")
+                  .attr("fill", "none");
 
 
-          rectBar.append("svg:rect")
-            .attr("x", nodeX - nodeW / 2)
-            .attr("y", nodeY - nodeH / 2 - 5)
-            .attr("class","mapN")
-            .attr("height", 5)
-            .attr("width", nodeW)
-            .attr("style", "stroke:black;stroke-width:1")
-            .attr("fill", "none");
+                rectBar.append("svg:rect")
+                  .attr("x", nodeX - nodeW / 2)
+                  .attr("y", nodeY - nodeH / 2 - 5)
+                  .attr("height", 5)
+                  .attr("width", varianceAvg * 100)
+                  .attr("fill", "green");
+
+// CREATING BAR CHART AND ENROUTE REACTION TO MRNA AND COPY NUMBER-------------------------------------------------------------------
+
+                for( var i = 1; i<enrouteNodeName.length; i++)
+                {
+                 // drawBarChart(i,id,node,rectBar,valueList,nodeAvg,varianceAvg);
+
+                  l = enrouteNodeY[i] + 10;
+                  if(node == enrouteNodeName[i])
+                  {
+                    var filler = "rect[id='" + enrouteNodeId[i] + "']";
+                    console.log(valueList);
+                    for(var i=0; i<valueList.length; i++){
+
+                     rectBar.append("svg:rect")
+                            .attr("x", enrouteNodeX[i])
+                            .attr("y", enrouteNodeY[i]-6)
+                            .attr("height", 5)
+                            .attr("width", 70)
+                            .attr('id',barId)
+                            .attr("style", "stroke:black;stroke-width:1")
+                            .attr("fill", "none");
+                      barIdArray.push(barId);
+                      barId = barId + 1;
+
+                    rectBar.append("svg:rect")
+                          .attr("x", enrouteNodeX[i])
+                          .attr("y", enrouteNodeY[i]-6)
+                          .attr('id', barId)
+                          .attr("height", 5)
+                          .attr("width", varianceAvg * 100)
+                          .attr("fill", "green");
+                     barIdArray.push(barId);
+                     barId = barId + 1;
+//                    d3.select('g').append('line').attr('id',barId).attr('x1',s).attr('y1',enrouteNodeY[i]+10)
+//                                  .attr('x2',s+170).attr('y2',enrouteNodeY[i]+10).attr('stroke','black');
+                    d3.select("g").append('line').attr('id',barId).attr('x1', function(){
+                                              m = m + 7;
+                                              return m;
+                                    })
+                                               .attr('y1', l)
+                                               .attr('x2', m)
+                                               .attr('y2', function(){
+                                                    if (id === 'mrnaexpression'){
+                                                        var y2 = l-(valueList[i]);
+                                                        return y2;
+                                                    }
+                                                    else{
+                                                        var y2 = l-(valueList[i]*30);
+                                                        return y2;
+                                                        }
+
+                                               })
+
+                                               .attr('stroke',function(){
+
+                                                    if(valueList[i] > 0)
+                                                    {
+                                                      return 'red';
+                                                    }
+                                                    else if (valueList[i] < 0)
+                                                    {
+                                                      return 'blue';
+                                                    }
+                                                    else
+                                                    {
+                                                      return 'white';
+                                                    }
+                                               })
+                                               .attr('stroke-weight', 50);
+
+                                      }
+                                    m = s;
+                                    barIdArray.push(barId);
+                                    barId = barId + 1;
+                                    d3.select(filler)
+                                      .attr("fill", color(nodeAvg));
 
 
-          rectBar.append("svg:rect")
-            .attr("x", nodeX - nodeW / 2)
-            .attr("y", nodeY - nodeH / 2 - 5)
-            .attr("class","barN")
-            .attr("height", 5)
-            .attr("width", varianceAvg * 100)
-            .attr("fill", "green");
+                  }
+                }
+                //var nodeNLen = nodeN.split(",");
+                //console.log(nodeNLen);
+                //if (nodeNLen.length > 0) {
+                //  console.log("draw triangle");
+                //}
+              }
 
 
-          rectBar.append("text")
-            .attr("x",nodeX - nodeW / 2 + 7)
-            .attr("y", nodeY - nodeH / 2 + 15)
-            .text(node)
-            .attr("class","textN")
-            .attr('fill','black')
-            .attr("font-family", "Times New Roman")
-            .attr("font-size", "13px");
-
-
-          //var nodeNLen = nodeN.split(",");
-          //console.log(nodeNLen);
-          //if (nodeNLen.length > 0) {
-          //  console.log("draw triangle");
-          //}
-        }
-
-
-
-      });
-
-      //  console.log("??");
-
-
+            });
 
     }
-
 
 
   });
-
 
   function getInfoDatasets(nodeNames) {
 
@@ -522,7 +471,7 @@ define(['jquery', 'd3', 'underscore', '../caleydo_core/ajax', '../pathfinder_ccl
 
     function dataReady() {
       console.log(allDatasets);
-      // logData(dataset,group,node);
+     // logData(dataset,group,node);
     }
 
     //
@@ -823,10 +772,12 @@ define(['jquery', 'd3', 'underscore', '../caleydo_core/ajax', '../pathfinder_ccl
       //.attr("stroke","red")
       .attr("fill", "transparent")
       .attr("name",function(node){
-        var text = node.name;
-        var name = String(text);
-        var nodeName = name.split(",");
-        return nodeName[0];})
+     /* var text = node.name;
+       var name = String(text);
+       var nodeName = name.split(",");
+       return nodeName[0];
+       */
+       return node.name;})
       .attr("id", function (node) {
         return node.id;
       })
@@ -842,17 +793,7 @@ define(['jquery', 'd3', 'underscore', '../caleydo_core/ajax', '../pathfinder_ccl
           .duration(200)
           .style("opacity", .9);
 
-        var name = node.name;
-        // console.log(node.name);
-        if(stdDevList.length!=0){
-
-          stdDevList.forEach(function(d){
-            if (getNodeName(node.name) === d.name){
-              name = d.std;
-            }
-          });
-        }
-        div.html(name)
+        div.html(node.name)
           .style("left", (d3.event.pageX) + "px")
           .style("top", (d3.event.pageY - 28) + "px");
 
@@ -899,33 +840,14 @@ define(['jquery', 'd3', 'underscore', '../caleydo_core/ajax', '../pathfinder_ccl
 
             var rectSourceId = "rect[id='" + sourceNode.id + "']";
             unselectNodes(parent, rectSourceId);
-            /*
-             text = node.name;
-             name = String(text);
-             nodeName = name.split(",");
-             var rectSourceId = "rect[id='"+sourceNode.id+"']";
-             unselectNodes(parent,rectSourceId);
+/*
+            text = node.name;
+            name = String(text);
+            nodeName = name.split(",");
+            var rectSourceId = "rect[id='"+sourceNode.id+"']";
+            unselectNodes(parent,rectSourceId);
 
-
-
-             */
-
-
-
-
-            //console.log(edges);
-
-
-            //var visited=[]
-            //var paths=[]
-            //var Queue=[];
-            //for (i = 0; i < nodes.length; i += 1) {
-            //  Queue.push(nodes[i].id);
-            //}
-            //
-            //allPaths(edges,nodes,Queue,visited,paths,sourceNode,targetNode);
-
-
+*/
             var i;
             //CODE FOR SHORTEST PATH ALGORITHM //
             var path = shortestPathAlgo(matrix, nodes, sourceNode, targetNode);
@@ -1327,37 +1249,6 @@ define(['jquery', 'd3', 'underscore', '../caleydo_core/ajax', '../pathfinder_ccl
   }
 
 
-  function allPaths(edges,nodes,Queue,visited,paths,currentNode,targetNode) {
-
-
-    console.log(Queue);
-    console.log(visited);
-    if(currentNode == targetNode || Queue.length==0){
-
-      paths.push(visited);
-      console.log(paths);
-      return;
-    }else{
-
-      //console.log("here>");
-      var v = _.filter(edges, function (item) {
-        if (item.source.id == currentNode.id) {
-          return item.target;
-        }
-      });
-
-      v.forEach(function(d){
-        //   console.log(d);
-        //
-        visited.push(d.id);
-        Queue.splice(index, 1);
-        allPaths(edges,nodes,Queue,visited,paths, d.id,targetNode);
-      });
-
-
-    }
-
-  }
   function shortestPathAlgo(matrix, nodes, sourceNode, targetNode) {
 
 
@@ -1520,6 +1411,8 @@ define(['jquery', 'd3', 'underscore', '../caleydo_core/ajax', '../pathfinder_ccl
 
     var id = selectedNode.id;
     var nodeClickedName = $("rect[id='"+id+"']").attr("name");
+    var nodeClickedX = $("rect[id='"+id+"']").attr("x");
+    var nodeClickedY = $("rect[id='"+id+"']").attr("y");
 
     var unselectRect = parent.selectAll("rect");
 
@@ -1528,26 +1421,25 @@ define(['jquery', 'd3', 'underscore', '../caleydo_core/ajax', '../pathfinder_ccl
     unselectRect.attr("style", "outline: none");
 
     unselectLines.attr("stroke", "transparent");
+
     //unselectLines.attr("stroke-width","0");
 
+
+
+
     if(!jQuery.isEmptyObject(selectedNode)){
-      if($( "#menu a#enroute" ).attr('selected'))
-      {
-        highlightNodes(selectedNode,'sourceNode');
-        // drawRectEnroute(nodeClickedName);
-        // putTextEnroute(nodeClickedName);
-        /* for(int i = 0; i<array.length;i++)
-         {
-         //d3.select("#array[i]").remove();
-         }*/
-      }
+     if($( "#menu a#enroute" ).attr('selected'))
+     {
+           highlightNodes(selectedNode,'sourceNode');
+
+     }
       else
       {
-        highlightNodes(selectedNode,'sourceNode');
+       highlightNodes(selectedNode,'sourceNode');
 
       }
 
-    }
+     }
 
 
   }
@@ -1581,7 +1473,6 @@ define(['jquery', 'd3', 'underscore', '../caleydo_core/ajax', '../pathfinder_ccl
 
   function highlightNodes(nodeH, nodeType) {
 
-    var nodeClickedName = $(nodeH).attr("name");
     var color = 'none';
     if (nodeType == 'sourceNode') {
       color = 'yellow';
@@ -1591,74 +1482,185 @@ define(['jquery', 'd3', 'underscore', '../caleydo_core/ajax', '../pathfinder_ccl
       color = 'red';
     }
     if($( "#menu a#enroute" ).attr('selected'))
-    {
-      var prop = "outline: thick solid "+color+";";
-      d3.select(nodeH)
-        .attr("style",prop);
+        {
+          resetAll(nodeH,nodeType);
+          var prop = "outline: thick solid "+color+";";
+                    d3.select(nodeH)
+                      .attr("style",prop);
+        }
+        else
+        {
+             var prop = "outline: thick solid "+color+";";
+                 d3.select(nodeH)
+                   .attr("style",prop);
 
-
-      count++;
-      if(nodeType == 'sourceNode')
-      {
-        b = temp;
-        d = temp;
-        f = tempF;
-
-
-      }
-
-      drawRectEnroute(nodeClickedName);
-      putTextEnroute(nodeClickedName);
-      if(nodeType != 'targetNode')
-      {
-        drawPathLinesEnroute();
-      }
-    }
-    else
-    {
-      var prop = "outline: thick solid "+color+";";
-      d3.select(nodeH)
-        .attr("style",prop);
-
-    }
+        }
 
   }
 
-  function drawRectEnroute(nodeClickedName)
+
+// DELETING ENROUTE WHEN A NEW PATH IS SELECTED-------------------------------------------------------
+
+function resetAll(nodeH,nodeType){
+
+console.log('nodeH =',nodeH);
+    var nodeClickedName = $(nodeH).attr("name");
+    var nodeClickedX = $(nodeH).attr("x");
+    var nodeClickedY = $(nodeH).attr("y");
+
+
+
+
+          count++;
+          if(nodeType == 'sourceNode')
+          {
+          b = temp;
+          d = temp;
+          f = tempF;
+          p = 10;
+          q = 10;
+
+
+          for(var i = 0; i<enrouteNodeId.length;i++)
+              {
+                    var removeId = "rect[id='" + enrouteNodeId[i] + "']";
+                    d3.select(removeId).remove();
+              }
+          for(var i = 0; i<array.length;i++)
+                        {
+                              var removeId = "text[id='" + array[i] + "']";
+                              d3.select(removeId).remove();
+                        }
+          for(var i = 0; i<geneIdArray.length;i++)
+                        {
+                              var removeId = "rect[id='" + geneIdArray[i] + "']";
+                              d3.select(removeId).remove();
+                        }
+          for(var i = 0; i<geneTextIdArray.length;i++)
+              {
+                    var removeId = "text[id='" + geneTextIdArray[i] + "']";
+                    d3.select(removeId).remove();
+              }
+
+          removeBarChart();
+
+          d3.selectAll('circle').remove();
+
+          }
+
+          drawRectEnroute(nodeClickedName,nodeClickedX,nodeClickedY);
+          putTextEnroute(nodeClickedName);
+          if(nodeType != 'targetNode')
+          {
+            drawPathLinesEnroute();
+          }
+
+
+
+}
+
+
+function removeBarChart()
+{
+  for(var i = 0; i<barIdArray.length;i++)
   {
-    //alert(id);
-    d3.select("g").append('rect').transition().attr("fill","none").attr('stroke','black').attr("stroke-width","2.5").attr('id',id)
-      .attr("x", a+40).attr("y",b).attr("width",70).attr("height", 20).attr("name",nodeClickedName)
-      /*.on('mouseover'function(){
-       d3.select(this)
-       .attr("style", "outline: thick solid orange;");
-       })*/;
-    b = b + 80;
-    id = id + 1;
+        var removeId = "rect[id='" + barIdArray[i] + "']";
+        d3.select(removeId).remove();
+  }
+
+}
+
+
+// RECREATING ENROUTE WHEN NEW PATH IS SELECTED-------------------------------------------------------------------------
+
+function drawRectEnroute(nodeClickedName,nodeClickedX,nodeClickedY)
+{
+  //alert(id);
+  var datasetBar = [1,2,3];
+  var firstName = nodeClickedName.split(",");
+  d3.select("g").append('rect').transition().attr("fill","none").attr('stroke','black').attr("stroke-width","2.5").attr('id',id)
+    .attr("x", a+40).attr("y",b).attr("width",70).attr("height", 20).attr("name",firstName[0]);
+
+    enrouteNodeName.push(firstName[0]);
+    enrouteNodeId.push(id);
+    enrouteNodeX.push(a+40);
+    enrouteNodeY.push(b);
+
+  id = id + 1;
+//  if ($( "#menu a#mrnaexpression" ).attr('selected') || $( "#menu a#copynumbervariation" ).attr('selected')) {
+//                alert(menuChosen);
+//               //menuChosen = id;
+//               drawMappings(menuChosen);
+//
+//        }
+   if (firstName.length < 4){
+    var len = firstName.length;
+   }
+   else{
+    var len = 4;
+   }
+  for(var i = 1; i<len; i++)
+  { console.log('x1',nodeClickedX,'y1',nodeClickedY,'x2',a+155,'y2',p+10);
+    d3.select("g").append('rect').transition().attr("fill","orange").attr('stroke','black').attr("stroke-width","2.5")
+        .attr('id',geneId).attr("x", a+155).attr("y",p).attr("width",70).attr("height", 20).attr("name",firstName[i]);
+    d3.select("g").append('line').attr('x1', a+110).attr('y1',b+10)
+            .attr('x2', a+155).attr('y2',p+10)
+            .attr("stroke","#ff884d").attr("stroke-width","0.5");
+
+    p = p + 30;
+    geneIdArray.push(geneId);
+    geneId = geneId + 1;
+
 
   }
 
-  function putTextEnroute(nodeClickedName)
-  {
-    d3.select("g").append('text').text(nodeClickedName).attr('x',c+49).attr('id',idText)
+  b = b + 80;
+
+}
+
+function putTextEnroute(nodeClickedName)
+{
+    var firstName = nodeClickedName.split(",");
+    d3.select("g").append('text').text(firstName[0]).attr('x',c+49).attr('id',idText)
       .attr('y', d+14).attr('fill','black')
       .attr("font-family", "Times New Roman")
       .attr("font-size", "13px");
     d = d + 80;
     array.push(idText);
     idText = idText + 1;
+    if (firstName.length < 4){
+        var len = firstName.length;
+       }
+       else{
+        var len = 4;
+       }
+    for(var i = 1; i<len; i++)
+      {
+        d3.select("g").append('text').text(firstName[i]).attr('x',a+160)
+              .attr('y', q+14).attr('fill','black').attr('id',geneTextId)
+              .attr("font-family", "Times New Roman")
+              .attr("font-size", "13px");
+        geneTextIdArray.push(geneTextId);
+        geneTextId = geneTextId + 1;
+        q = q + 30;
 
-  }
+      }
 
-  function drawPathLinesEnroute()
-  {
-    d3.select("g").append('line').attr('x1', e+75).attr('y1',f)
-      .attr('x2', e+75).attr('y2',f+60)
-      .attr("stroke","#ff884d").attr("stroke-width","2.5");
-    f = f +80;
-  }
+}
 
-// ONLY COMMENTS AFTER THIS POINT --- IGNORE FOR NOW ---
+function drawPathLinesEnroute()
+{
+
+  for(var i = 0; i < 2; i++){
+  d3.select("g").append('line').attr('x1', e+75).attr('y1',f)
+    .attr('x2', e+75).attr('y2',f+60)
+    .attr("stroke","#ff884d").attr("stroke-width","2.5");
+   }
+  d3.select('g').append('circle').attr('cx',e+75).attr('cy',f+60).attr('r',3).attr('fill','black');
+  f = f +80;
+}
+
+// ONLY COMMENTS AFTER THIS POINT ------------------------------- IGNORE FOR NOW ---------------------------------------------------------------
 
 //function displayText(parent,allNodes)
 //{
