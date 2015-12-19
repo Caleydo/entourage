@@ -980,7 +980,17 @@ define(['jquery', 'd3', 'underscore', '../caleydo_core/ajax', '../pathfinder_ccl
           .duration(200)
           .style("opacity", .9);
 
-        div.html(node.name)
+        var name = node.name;
+        // console.log(node.name);
+        if(stdDevList.length!=0){
+
+          stdDevList.forEach(function(d){
+            if (getNodeName(node.name) === d.name){
+              name = d.std;
+            }
+          });
+        }
+        div.html(name)
           .style("left", (d3.event.pageX) + "px")
           .style("top", (d3.event.pageY - 28) + "px")
           .style("background","#333")
@@ -990,7 +1000,6 @@ define(['jquery', 'd3', 'underscore', '../caleydo_core/ajax', '../pathfinder_ccl
           .style("bottom","26px;")
           .style("padding","5px 15px;")
           .style("left","20%;");
-
       })
       .on("mouseout", function () {
         var color = d3.select(this).attr("style");
