@@ -7,7 +7,8 @@
   },
   "peerDependencies": {
     "caleydo_core": "*",
-    "caleydo_server": "*"
+    "caleydo_server": "*",
+    "pathfinder_ccle": "*"
   },
   "caleydo": {
     "plugins": {
