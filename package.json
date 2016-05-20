@@ -1,8 +1,10 @@
 {
   "name": "entourage",
+  "description": "Visualizing large & heterogeneous experimental data with enRoute and pathway interdependencies with Entourage.",
   "version": "0.0.1",
   "license": "SEE LICENSE IN LICENSE",
   "repository": "Caleydo/entourage",
+  "homepage": "http://www.caleydo.org/tools/pathways/",
   "dependencies": {
   },
   "peerDependencies": {
@@ -11,6 +13,7 @@
     "pathfinder_ccle": "*"
   },
   "caleydo": {
+    "type": "app",
     "plugins": {
       "web": {
         "type": "app",
