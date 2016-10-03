@@ -5,6 +5,8 @@ Caleydo Entourage is a visualization technique to efficiently perform multi-path
 
 See the [project homepage](http://entourage.caleydo.org/) for further information.
 
+A [demonstration](http://playground.caleydo.org/entourage/) is available in the Caleydo Playground.
+
 Installation
 ------------
 
